@@ -232,20 +232,33 @@
                                 <Button Content="Add variable" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
                                 <Button Content="From environment…" Command="{Binding AddFromEnvironmentCommand}" Margin="0,0,6,0"
                                         ToolTip="Pick variables, or single Path entries, from the current environment" />
-                                <Button Content="Remove" Command="{Binding RemoveVariableCommand}" Margin="0,0,6,0" />
-                                <Button Content="↑" Command="{Binding MoveUpCommand}" Margin="0,0,6,0" ToolTip="Move up" />
-                                <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="Move down" />
+                                <Button Content="Remove" Command="{Binding RemoveVariableCommand}" />
                             </StackPanel>
                             <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="12,0,0,0"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        Text="Prepend/Append add ';'-separated entries to Path-like variables · %VAR% references are kept · Machine scope needs admin" />
                         </DockPanel>
 
-                        <DataGrid Grid.Row="3" ItemsSource="{Binding Editor.Variables}"
-                                  SelectedItem="{Binding SelectedVariable}"
+                        <!-- Rows are reordered by dragging the grip in the first column (or Alt+Up / Alt+Down). -->
+                        <DataGrid x:Name="VariablesGrid" Grid.Row="3" ItemsSource="{Binding Editor.Variables}"
+                                  SelectedItem="{Binding SelectedVariable}" SelectionMode="Single"
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                  CanUserSortColumns="False" HeadersVisibility="Column">
+                                  CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column"
+                                  AllowDrop="True" DragOver="VariablesGrid_DragOver" Drop="VariablesGrid_Drop"
+                                  PreviewKeyDown="VariablesGrid_PreviewKeyDown">
                             <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="34" CanUserResize="False">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent" Cursor="SizeNS" ToolTip="Drag to reorder (Alt+↑ / Alt+↓)"
+                                                    PreviewMouseLeftButtonDown="Grip_PreviewMouseLeftButtonDown"
+                                                    PreviewMouseMove="Grip_PreviewMouseMove">
+                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridComboBoxColumn Header="Scope" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Scopes}"
                                                         SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
