@@ -5,6 +5,7 @@
         xmlns:vm="clr-namespace:EnvDeck.App.ViewModels"
         xmlns:l="clr-namespace:EnvDeck.App.Localization"
         Title="{Binding Title}" Width="1240" Height="800" MinWidth="960" MinHeight="600"
+        Icon="pack://application:,,,/Assets/EnvDeck.ico"
         WindowStartupLocation="CenterScreen">
     <Window.InputBindings>
         <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding Profiles.NewCommand}" />

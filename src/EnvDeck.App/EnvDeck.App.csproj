@@ -6,9 +6,14 @@
     <AssemblyName>EnvDeck.App</AssemblyName>
     <RootNamespace>EnvDeck.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\EnvDeck.ico</ApplicationIcon>
     <!-- WPF0001: ThemeMode (Fluent) is still marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\EnvDeck.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EnvDeck.Core\EnvDeck.Core.csproj" />
