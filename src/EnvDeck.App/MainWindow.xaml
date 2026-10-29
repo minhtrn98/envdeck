@@ -160,6 +160,8 @@
                         <DockPanel Grid.Row="2" Margin="0,0,0,6">
                             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                                 <Button Content="Add variable" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
+                                <Button Content="From environment…" Command="{Binding AddFromEnvironmentCommand}" Margin="0,0,6,0"
+                                        ToolTip="Pick variables, or single Path entries, from the current environment" />
                                 <Button Content="Remove" Command="{Binding RemoveVariableCommand}" Margin="0,0,6,0" />
                                 <Button Content="↑" Command="{Binding MoveUpCommand}" Margin="0,0,6,0" ToolTip="Move up" />
                                 <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="Move down" />

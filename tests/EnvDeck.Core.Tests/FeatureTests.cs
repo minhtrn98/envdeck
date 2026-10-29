@@ -122,6 +122,23 @@ public class FeatureTests
     }
 
     [Fact]
+    public void Picking_list_entries_creates_a_prepend_that_adds_only_those_entries()
+    {
+        using var t = new TestDeck();
+        var home = Environment.GetEnvironmentVariable("USERPROFILE")!;
+        t.Set("Path", $@"C:\Windows;{home}\go\bin;C:\tools", kind: ValueKind.ExpandString);
+
+        var picked = VariableCapture.FromEntries(EnvScope.User, "Path", [$@"{home}\go\bin", @"C:\tools", @"c:\TOOLS\"], portable: true);
+        t.Set("Path", @"C:\Windows"); // e.g. a fresh machine
+        t.Save("go", picked);
+        t.Service.Apply("go");
+
+        Assert.Equal(VarOp.Prepend, picked.Op);
+        Assert.Equal(@"%USERPROFILE%\go\bin;C:\tools", picked.Value);
+        Assert.Equal(@"%USERPROFILE%\go\bin;C:\tools;C:\Windows", t.Get("Path"));
+    }
+
+    [Fact]
     public void Portabilize_prefers_the_most_specific_folder()
     {
         var local = Environment.GetEnvironmentVariable("LOCALAPPDATA")!;

@@ -337,16 +337,8 @@ public sealed class DeckService
                 warnings.Add($"{scope}\\{name} does not exist; skipped.");
                 continue;
             }
-            var value = portable ? Portability.Portabilize(current.Value) : current.Value;
-            var kind = value != current.Value ? ValueKind.ExpandString : current.Kind;
             profile.Variables.RemoveAll(v => v.Scope == scope && Same(v.Name, name));
-            profile.Variables.Add(new ProfileVariable
-            {
-                Name = current.Name,
-                Value = value,
-                Scope = scope,
-                Kind = kind == ChangePlanner.AutoKind(value) ? null : kind,
-            });
+            profile.Variables.Add(VariableCapture.FromValue(scope, current, portable));
         }
         return (Profiles.Save(profile).Profile, warnings);
     }

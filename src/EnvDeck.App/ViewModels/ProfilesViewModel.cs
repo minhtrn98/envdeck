@@ -248,6 +248,22 @@ public partial class ProfilesViewModel : ObservableObject
     }
 
     [RelayCommand]
+    void AddFromEnvironment()
+    {
+        if (Editor is null) return;
+        var editor = Editor;
+        EnvPickerViewModel? picker = null;
+        if (!_main.Run(() => picker = new EnvPickerViewModel(Service.Env))) return;
+
+        var window = new EnvPickerWindow(picker!) { Owner = Application.Current.MainWindow };
+        if (window.ShowDialog() != true) return;
+        VariableViewModel? last = null;
+        foreach (var v in window.Result) last = editor.Merge(v);
+        SelectedVariable = last;
+        _main.Status = $"Added {window.Result.Count} variable(s) from the current environment to '{editor.Name}'. Review, then Save.";
+    }
+
+    [RelayCommand]
     void RemoveVariable()
     {
         if (Editor is null || SelectedVariable is null) return;
@@ -398,6 +414,33 @@ public partial class ProfileEditorViewModel : ObservableObject
     partial void OnGroupChanged(string value) => IsDirty = true;
 
     partial void OnTagsChanged(string value) => IsDirty = true;
+
+    /// <summary>
+    /// Adds a variable the way the validator allows: Set/Remove replace every entry of the same variable;
+    /// Prepend/Append replace a Set/Remove and merge into an existing entry with the same operation.
+    /// </summary>
+    public VariableViewModel Merge(ProfileVariable v)
+    {
+        bool SameVar(VariableViewModel x) =>
+            x.Scope == v.Scope && string.Equals(x.Name.Trim(), v.Name, StringComparison.OrdinalIgnoreCase);
+
+        if (v.Op is VarOp.Prepend or VarOp.Append
+            && Variables.FirstOrDefault(x => SameVar(x) && x.Op == v.Op) is { } existing)
+        {
+            existing.Value = PathList.Join(PathList.Distinct(PathList.Split(existing.Value).Concat(PathList.Split(v.Value))));
+            return existing;
+        }
+
+        Func<VariableViewModel, bool> replaced = v.Op is VarOp.Set or VarOp.Remove
+            ? SameVar
+            : x => SameVar(x) && x.Op is VarOp.Set or VarOp.Remove;
+        var index = Variables.ToList().FindIndex(x => replaced(x));
+        foreach (var old in Variables.Where(replaced).ToList()) Variables.Remove(old);
+
+        var added = new VariableViewModel(v);
+        Variables.Insert(index < 0 ? Variables.Count : Math.Min(index, Variables.Count), added);
+        return added;
+    }
 
     public void MarkSaved(int version)
     {
