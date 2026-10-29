@@ -37,6 +37,18 @@ public partial class MainWindow : Window
     void SearchGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e) =>
         _vm.Search.OpenCommand.Execute(SearchGrid.SelectedItem);
 
+    void PreviewTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        PreviewHistoryTabs.SelectedIndex = 0;
+        PreviewHistoryExpander.IsExpanded = true;
+    }
+
+    void HistoryTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        PreviewHistoryTabs.SelectedIndex = 1;
+        PreviewHistoryExpander.IsExpanded = true;
+    }
+
     /// <summary>
     /// Reacts to the switch however it was flipped (mouse, Space, UI Automation); a ToggleButton's Command only
     /// runs on click. Changes coming from the view model (switch already matches the state) are ignored.

@@ -60,6 +60,25 @@
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Margin" Value="0,18,0,4" />
         </Style>
+        <Style x:Key="PreviewHistoryTabText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="PreviewTabText" TargetType="TextBlock" BasedOn="{StaticResource PreviewHistoryTabText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected, ElementName=PreviewTab}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HistoryTabText" TargetType="TextBlock" BasedOn="{StaticResource PreviewHistoryTabText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected, ElementName=HistoryTab}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <!-- Colors the +/−/~ marker of a compare row. -->
         <Style x:Key="DiffSymbol" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="Bold" />
@@ -285,21 +304,38 @@
                         </DataGrid>
 
                         <!-- Preview / history: collapsed by default so the variables get the room -->
-                        <Expander Grid.Row="4" Header="{l:Tr PreviewAndHistory}" IsExpanded="False" Margin="0,10,0,0"
+                        <Expander x:Name="PreviewHistoryExpander" Grid.Row="4" IsExpanded="False" Margin="0,6,0,0"
                                   HorizontalAlignment="Stretch">
-                            <TabControl Height="230" Margin="0,6,0,0">
-                                <TabItem Header="{l:Tr TabPreview}">
-                                    <DockPanel Margin="0,6,0,0">
-                                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Click="PreviewTabButton_Click" Margin="0,0,6,0">
+                                        <TextBlock Style="{StaticResource PreviewTabText}" Text="{l:Tr TabPreview}" />
+                                    </Button>
+                                    <Button Click="HistoryTabButton_Click">
+                                        <TextBlock Style="{StaticResource HistoryTabText}" Text="{l:Tr TabHistory}" />
+                                    </Button>
+                                </StackPanel>
+                            </Expander.Header>
+                            <TabControl x:Name="PreviewHistoryTabs" Height="260" Margin="0,2,0,0">
+                                <TabControl.ItemContainerStyle>
+                                    <Style TargetType="TabItem">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </Style>
+                                </TabControl.ItemContainerStyle>
+                                <TabItem x:Name="PreviewTab">
+                                    <DockPanel Margin="0,2,0,0">
+                                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                             <Button DockPanel.Dock="Left" Content="{l:Tr PreviewChanges}"
                                                     Command="{Binding PreviewChangesCommand}"
                                                     ToolTip="{l:Tr PreviewChangesTip}" />
                                             <TextBlock Text="{Binding PreviewSummary}" VerticalAlignment="Center" Margin="10,0,0,0" />
                                         </DockPanel>
                                         <DataGrid ItemsSource="{Binding Preview}" AutoGenerateColumns="False" IsReadOnly="True"
-                                                  HeadersVisibility="Column">
+                                                  HeadersVisibility="Column" CanUserResizeColumns="True" ColumnHeaderHeight="28">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAction}" Binding="{Binding Action}" Width="100" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAction}"
+                                                                    Binding="{Binding Action}" Width="140" MinWidth="125"
+                                                                    CanUserResize="True" />
                                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
                                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
                                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
@@ -307,9 +343,9 @@
                                         </DataGrid>
                                     </DockPanel>
                                 </TabItem>
-                                <TabItem Header="{l:Tr TabHistory}">
-                                    <DockPanel Margin="0,6,0,0">
-                                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                                <TabItem x:Name="HistoryTab">
+                                    <DockPanel Margin="0,2,0,0">
+                                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
                                             <Button Content="{l:Tr CompareWithCurrent}" Command="{Binding CompareVersionCommand}"
                                                     Margin="0,0,6,0" />
                                             <Button Content="{l:Tr RollBackToVersion}" Command="{Binding RollbackCommand}" />
