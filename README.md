@@ -120,7 +120,8 @@ Things Windows does that are worth knowing:
 
 ## Build from source
 
-Requires the .NET 10 SDK on Windows.
+Requires the .NET 10 SDK on Windows. Debug builds run through `dotnet.exe` (no `.exe` apphost), so `dotnet run`
+also works on machines whose execution policy blocks freshly built, unsigned executables.
 
 ```powershell
 dotnet build EnvDeck.slnx

@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- Debug runs through the signed dotnet.exe ("dotnet x.dll") instead of a freshly built, unsigned
+         x.exe, which execution policies (AppLocker, Defender ASR) often block. Release still ships the .exe. -->
+    <UseAppHost Condition="'$(Configuration)' != 'Release'">false</UseAppHost>
 
     <Version>0.1.0</Version>
     <Product>EnvDeck</Product>
