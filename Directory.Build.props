@@ -8,6 +8,10 @@
     <!-- Debug runs through the signed dotnet.exe ("dotnet x.dll") instead of a freshly built, unsigned
          x.exe, which execution policies (AppLocker, Defender ASR) often block. Release still ships the .exe. -->
     <UseAppHost Condition="'$(Configuration)' != 'Release'">false</UseAppHost>
+    <!-- MSBuild turns environment variables into properties, and the SDK appends $(PublicKey) to every
+         InternalsVisibleTo. A machine-wide PublicKey variable (used by other apps) would break ours (CS1700);
+         EnvDeck is not strong-name signed, so pin it to empty. -->
+    <PublicKey></PublicKey>
 
     <Version>0.1.0</Version>
     <Product>EnvDeck</Product>
