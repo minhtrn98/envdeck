@@ -1,4 +1,5 @@
 <Window x:Class="EnvDeck.App.FluentDialog"
+        FontFamily="{StaticResource AppFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="EnvDeck" Width="480" SizeToContent="Height" ResizeMode="NoResize"

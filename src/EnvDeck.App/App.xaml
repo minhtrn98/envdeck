@@ -8,13 +8,22 @@
         <app:NullToCollapsedConverter x:Key="NullToCollapsed" />
         <app:NullToCollapsedConverter x:Key="NotNullToCollapsed" Invert="True" />
 
-        <!-- DataGrid cells: the default column styles leave text at the top of the row. -->
+        <!-- App font, with fallbacks for machines without Cascadia (it ships with Windows Terminal / Windows 11).
+             Windows set FontFamily to AppFont; overriding the theme key also covers the Fluent control styles. -->
+        <FontFamily x:Key="AppFont">Cascadia Code, Cascadia Mono, Consolas, Segoe UI</FontFamily>
+        <FontFamily x:Key="ContentControlThemeFontFamily">Cascadia Code, Cascadia Mono, Consolas, Segoe UI</FontFamily>
+
+        <!-- DataGrid cells: the default column styles leave text at the top of the row with almost no padding.
+             Column headers get the same left padding (GridHeader) so titles line up with the values. -->
+        <Thickness x:Key="CellPadding">10,6,10,6</Thickness>
         <Style x:Key="CellText" TargetType="TextBlock" BasedOn="{x:Static DataGridTextColumn.DefaultElementStyle}">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Margin" Value="{StaticResource CellPadding}" />
         </Style>
         <Style x:Key="CellCombo" TargetType="ComboBox" BasedOn="{x:Static DataGridComboBoxColumn.DefaultElementStyle}">
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="{StaticResource CellPadding}" />
         </Style>
     </Application.Resources>
 </Application>
