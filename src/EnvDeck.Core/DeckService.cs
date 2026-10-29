@@ -32,6 +32,9 @@ public sealed record ActiveProfileStatus(AppliedProfile Entry, int? CurrentVersi
     public bool Outdated => CurrentVersion is { } v && v != Entry.Version;
 }
 
+/// <summary>A variable that two profiles which are on both set; <see cref="NewValue"/> wins while the new one is on.</summary>
+public sealed record ProfileConflict(EnvScope Scope, string Name, string OtherProfile, string? OtherValue, string? NewValue);
+
 public sealed record SearchHit(string Source, EnvScope Scope, string Name, string? Value, VarOp? Op);
 
 public sealed class SearchOptions
@@ -131,6 +134,9 @@ public sealed class DeckService
             .Concat(turnOff.SelectMany(a => a.Changes).Select(c => c.Scope))
             .Distinct().ToList();
         EnsureWritable(scopes);
+
+        foreach (var c in FindConflicts(profile))
+            result.Warnings.Add($"{c.Scope}\\{c.Name} is also set by '{c.OtherProfile}'; '{profile.Name}' overrides it while on.");
 
         if (dryRun)
         {
@@ -297,6 +303,35 @@ public sealed class DeckService
         state.Applied.RemoveAt(index);
 
         static string? RemoveEntry(string? value, string entry) => value is null ? null : PathList.Remove(value, [entry]);
+    }
+
+    /// <summary>
+    /// Variables that turning <paramref name="profile"/> on would overwrite (Set/Remove) while another profile that
+    /// is on has set them to something else. Profiles of the same group do not count: they are turned off first.
+    /// </summary>
+    public List<ProfileConflict> FindConflicts(Profile profile)
+    {
+        var others = State.Load().Applied
+            .Where(a => !Same(a.Profile, profile.Name)
+                        && (string.IsNullOrEmpty(profile.Group) || !Same(a.Group, profile.Group)))
+            .ToList();
+        if (others.Count == 0) return [];
+
+        var conflicts = new List<ProfileConflict>();
+        foreach (var planned in Plan(profile))
+        {
+            var overwrites = profile.Variables.Any(v =>
+                v.Scope == planned.Scope && Same(v.Name, planned.Name) && v.Op is VarOp.Set or VarOp.Remove);
+            if (!overwrites) continue;
+
+            // The profile turned on last is the one whose value is in effect.
+            var owner = others.LastOrDefault(a => a.Changes.Any(ch => ch.Scope == planned.Scope && Same(ch.Name, planned.Name)));
+            if (owner is null) continue;
+            var theirs = owner.Changes.First(ch => ch.Scope == planned.Scope && Same(ch.Name, planned.Name)).After;
+            if (theirs != planned.After)
+                conflicts.Add(new ProfileConflict(planned.Scope, planned.Name, owner.Profile, theirs, planned.After));
+        }
+        return conflicts;
     }
 
     public List<ActiveProfileStatus> Status()

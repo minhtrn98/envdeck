@@ -213,6 +213,23 @@ public partial class ProfilesViewModel : ObservableObject
         }
     }
 
+    /// <summary>Warns before turning on a profile that would overwrite values set by other profiles that are on.</summary>
+    bool ConfirmOverrides(string name)
+    {
+        List<ProfileConflict> conflicts = [];
+        if (!_main.Run(() => conflicts = Service.FindConflicts(Service.Profiles.Get(name)))) return false;
+        if (conflicts.Count == 0) return true;
+
+        var lines = conflicts.Take(8).Select(c => L.T("ConflictLine", $"{c.Scope}\\{c.Name}", c.OtherProfile,
+            Short(c.OtherValue), Short(c.NewValue))).ToList();
+        if (conflicts.Count > 8) lines.Add(L.T("AndMore", conflicts.Count - 8));
+        return Dialogs.ConfirmWarning(L.T("ConflictHeading", name), L.T("ConflictBody", string.Join("\n", lines), name),
+            L.T("TurnOnAnyway"));
+
+        static string Short(string? value) =>
+            value is null ? L.T("ValueDeleted") : value.Length <= 48 ? value : value[..47] + "…";
+    }
+
     /// <summary>Unsaved edits of <paramref name="name"/> would be lost or left out; offer to save them first.</summary>
     bool SaveIfEditing(string name, string action)
     {
@@ -232,6 +249,7 @@ public partial class ProfilesViewModel : ObservableObject
 
             var name = item.Name;
             var turningOn = !Service.IsActive(name);
+            if (turningOn && !ConfirmOverrides(name)) return;
             _main.Run(() =>
             {
                 var result = turningOn ? Service.Apply(name) : Service.Unapply(name);

@@ -19,6 +19,10 @@ static class Dialogs
     public static bool ConfirmDanger(string heading, string? body, string confirm) =>
         Show(DialogKind.Danger, heading, body, confirm, null, L.T("Cancel")) == DialogChoice.Primary;
 
+    /// <summary>For actions with a side effect worth a second look: warning icon, the action stays the default.</summary>
+    public static bool ConfirmWarning(string heading, string? body, string confirm) =>
+        Show(DialogKind.Warning, heading, body, confirm, null, L.T("Cancel")) == DialogChoice.Primary;
+
     /// <summary>Three-way question, e.g. Save / Don't save / Cancel.</summary>
     public static DialogChoice Ask(string heading, string? body, string primary, string secondary, string? cancel = null) =>
         Show(DialogKind.Question, heading, body, primary, secondary, cancel ?? L.T("Cancel"));

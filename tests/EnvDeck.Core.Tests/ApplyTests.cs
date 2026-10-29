@@ -143,6 +143,23 @@ public class ApplyTests
     }
 
     [Fact]
+    public void Conflicts_list_values_another_profile_that_is_on_has_set()
+    {
+        using var t = new TestDeck();
+        t.Save(new Profile { Name = "a", Variables = [Var("FOO", "A"), Var("SAME", "1"), Var("Path", @"C:\a", VarOp.Prepend)] });
+        t.Save(new Profile { Name = "b", Variables = [Var("FOO", "B"), Var("SAME", "1"), Var("Path", @"C:\b", VarOp.Prepend)] });
+        t.Save(new Profile { Name = "j17", Group = "java", Variables = [Var("JAVA_HOME", "17")] });
+        t.Save(new Profile { Name = "j21", Group = "java", Variables = [Var("JAVA_HOME", "21")] });
+        t.Service.Apply("a");
+        t.Service.Apply("j17");
+
+        var conflict = Assert.Single(t.Service.FindConflicts(t.Service.Profiles.Get("b")));
+        Assert.Equal(("FOO", "a", "A", "B"), (conflict.Name, conflict.OtherProfile, conflict.OtherValue, conflict.NewValue));
+        Assert.Empty(t.Service.FindConflicts(t.Service.Profiles.Get("j21"))); // same group: j17 is turned off instead
+        Assert.Contains(t.Service.Apply("b").Warnings, w => w.Contains("FOO") && w.Contains("'a'"));
+    }
+
+    [Fact]
     public void Turning_off_after_an_outside_change_only_removes_own_list_entries_and_keeps_edited_values()
     {
         using var t = new TestDeck();
