@@ -84,7 +84,7 @@ public partial class EnvironmentViewModel : ObservableObject
         var rows = selected?.OfType<EnvRow>().ToList() ?? [];
         if (rows.Count == 0)
         {
-            Dialogs.Info("Select one or more variables to capture (Ctrl+click for several).");
+            Dialogs.Info("Nothing selected", "Select one or more variables to capture (Ctrl+click for several).");
             return;
         }
         var target = Dialogs.Prompt("Capture into profile",
@@ -92,8 +92,11 @@ public partial class EnvironmentViewModel : ObservableObject
             _main.Profiles.Selected?.Name ?? "",
             _main.Profiles.Items.Select(p => p.Name));
         if (target is null) return;
-        var portable = Dialogs.Confirm(
-            "Make paths portable?\n\nC:\\Users\\you\\... becomes %USERPROFILE%\\..., so the profile also works on another machine or account.");
+        var answer = Dialogs.Ask("Make paths portable?",
+            "C:\\Users\\you\\... becomes %USERPROFILE%\\..., so the profile also works on another machine or account.",
+            "Make portable", "Keep as is");
+        if (answer == DialogChoice.Cancel) return;
+        var portable = answer == DialogChoice.Primary;
 
         _main.Run(() =>
         {
@@ -187,7 +190,7 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
         if (RestoreMachine) scopes.Add(EnvScope.Machine);
         if (scopes.Count == 0)
         {
-            Dialogs.Info("Choose User and/or Machine to restore.");
+            Dialogs.Info("Nothing to restore", "Tick User and/or Machine to choose what to restore.");
             return;
         }
 
@@ -202,7 +205,8 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
             var summary = string.Join("\n", preview.Changes.Take(15).Select(c =>
                 $"{(c.Action == ChangeAction.Delete ? "−" : c.Action == ChangeAction.Create ? "+" : "~")} {c.Scope}\\{c.Name}"));
             if (preview.Changes.Count > 15) summary += $"\n… and {preview.Changes.Count - 15} more";
-            if (!Dialogs.Confirm($"Restore {preview.Changes.Count} variable(s) from backup {id}?\n\n{summary}\n\nA backup of the current state is taken first."))
+            if (!Dialogs.Confirm($"Restore {preview.Changes.Count} variable(s) from backup {id}?",
+                    $"{summary}\n\nA backup of the current state is taken first, so this can be undone.", "Restore"))
                 return;
 
             var result = main.Service.Restore(id, scopes, Prune);
@@ -218,7 +222,7 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
     {
         if (Selected is null) return;
         var id = Selected.Id;
-        if (!Dialogs.Confirm($"Delete backup {id}?")) return;
+        if (!Dialogs.ConfirmDanger($"Delete backup {id}?", "The backup file is removed for good.", "Delete")) return;
         main.Run(() => main.Service.Backups.Delete(id), $"Deleted backup {id}.");
         Refresh();
     }
@@ -464,7 +468,10 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
     {
         var file = Dialogs.SaveFile("EnvDeck bundle (*.zip)|*.zip", $"envdeck-{Environment.MachineName}-{DateTime.Now:yyyyMMdd}.zip");
         if (file is null) return;
-        var withBackups = Dialogs.Confirm("Include backups too?\n\nUseful before reinstalling Windows; profile history is always included.");
+        var answer = Dialogs.Ask("Include backups too?",
+            "Useful before reinstalling Windows. Profile history is always included.", "Include backups", "Profiles only");
+        if (answer == DialogChoice.Cancel) return;
+        var withBackups = answer == DialogChoice.Primary;
         main.Run(() =>
         {
             var manifest = main.Service.Export(file, null, withHistory: true, withBackups);
@@ -481,7 +488,9 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
         {
             var result = main.Service.Import(file, overwrite: false);
             if (result.Skipped.Count > 0
-                && Dialogs.Confirm($"These profiles already exist:\n{string.Join(", ", result.Skipped)}\n\nOverwrite them (saved as a new version, history kept)?"))
+                && Dialogs.Confirm($"{result.Skipped.Count} profile(s) already exist",
+                    $"{string.Join(", ", result.Skipped)}\n\nOverwrite them? Each is saved as a new version, so its history is kept.",
+                    "Overwrite", "Skip them"))
                 result = main.Service.Import(file, overwrite: true);
             main.Status = $"Imported {result.Imported.Count} profile(s) and {result.Backups.Count} backup(s).";
         });

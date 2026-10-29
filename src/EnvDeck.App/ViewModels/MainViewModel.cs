@@ -115,7 +115,9 @@ public partial class MainViewModel : ObservableObject
         catch (ElevationRequiredException ex)
         {
             Status = ex.Message;
-            if (Dialogs.Confirm($"{ex.Message}\n\nRestart EnvDeck as administrator?")) RestartElevated();
+            if (Dialogs.Confirm("Administrator rights needed",
+                    $"{ex.Message} Restart EnvDeck as administrator to continue?", "Restart as administrator"))
+                RestartElevated();
             return false;
         }
         catch (Exception ex) when (ex is DeckException or IOException or UnauthorizedAccessException or InvalidDataException)

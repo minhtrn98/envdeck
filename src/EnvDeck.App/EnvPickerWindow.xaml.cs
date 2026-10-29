@@ -22,7 +22,7 @@ public partial class EnvPickerWindow : Window
         Result = _vm.BuildResult();
         if (Result.Count == 0)
         {
-            MessageBox.Show(this, "Tick at least one variable or list entry.", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+            Dialogs.Info("Nothing selected", "Tick at least one variable or list entry.");
             return;
         }
         DialogResult = true;

@@ -19,15 +19,28 @@ public partial class App : Application
         }
         catch (DeckException ex)
         {
-            MessageBox.Show(ex.Message, "EnvDeck could not start", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError("EnvDeck could not start", ex.Message);
             Shutdown(1);
         }
     }
 
     static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show(e.Exception.ToString(), "EnvDeck: unexpected error", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
+        ShowError("Something unexpected happened", e.Exception.ToString());
+    }
+
+    static void ShowError(string heading, string details)
+    {
+        try
+        {
+            Dialogs.Error(details, heading);
+        }
+        catch (Exception)
+        {
+            // The UI itself may be what is broken; the Win32 box always works.
+            MessageBox.Show(details, heading, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
 
