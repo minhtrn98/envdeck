@@ -34,11 +34,26 @@ public partial class ProfilesViewModel : ObservableObject
     public partial string Filter { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ToggleText))]
+    [NotifyCanExecuteChangedFor(nameof(DuplicateCommand), nameof(RenameCommand), nameof(DeleteCommand))]
     public partial ProfileItemViewModel? Selected { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(DiscardCommand))]
     public partial ProfileEditorViewModel? Editor { get; set; }
+
+    // Save/Discard are enabled only while the editor has unsaved changes.
+    partial void OnEditorChanged(ProfileEditorViewModel? oldValue, ProfileEditorViewModel? newValue)
+    {
+        if (oldValue is not null) oldValue.PropertyChanged -= OnEditorPropertyChanged;
+        if (newValue is not null) newValue.PropertyChanged += OnEditorPropertyChanged;
+    }
+
+    void OnEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProfileEditorViewModel.IsDirty)) return;
+        SaveCommand.NotifyCanExecuteChanged();
+        DiscardCommand.NotifyCanExecuteChanged();
+    }
 
     [ObservableProperty]
     public partial VariableViewModel? SelectedVariable { get; set; }
@@ -49,15 +64,14 @@ public partial class ProfilesViewModel : ObservableObject
     [ObservableProperty]
     public partial string PreviewSummary { get; set; } = "";
 
-    public string ToggleText => Selected?.IsActive == true ? "Turn off" : "Turn on";
-
     partial void OnFilterChanged(string value) => View.Refresh();
 
     partial void OnSelectedChanged(ProfileItemViewModel? oldValue, ProfileItemViewModel? newValue)
     {
         if (_reloading) return;
         if (Editor is { IsDirty: true } && !SameName(Editor.Name, newValue?.Name)
-            && Dialogs.Confirm($"Save changes to '{Editor.Name}' before switching?"))
+            && Dialogs.Confirm($"Save changes to '{Editor.Name}'?",
+                "You are switching to another profile; unsaved edits are lost otherwise.", "Save", "Don't save"))
             SaveEditor(askToReapply: false);
         LoadEditor();
     }
@@ -81,14 +95,12 @@ public partial class ProfilesViewModel : ObservableObject
         if (Service.Profiles.LoadErrors.Count > 0) _main.Status = "Could not read: " + string.Join("; ", Service.Profiles.LoadErrors);
         // Keep unsaved edits of the selected profile across a refresh.
         if (select is not null || Editor is not { IsDirty: true } || !SameName(Editor.Name, Selected?.Name)) LoadEditor();
-        OnPropertyChanged(nameof(ToggleText));
     }
 
     public void RefreshActive()
     {
         var active = ActiveNames();
-        foreach (var item in Items) item.IsActive = active.Contains(item.Name);
-        OnPropertyChanged(nameof(ToggleText));
+        foreach (var item in Items) item.SyncActive(active.Contains(item.Name));
     }
 
     void LoadEditor()
@@ -120,7 +132,8 @@ public partial class ProfilesViewModel : ObservableObject
             Items.FirstOrDefault(i => SameName(i.Name, profile.Name))?.Update(profile);
             _main.Status = changed ? $"Saved '{profile.Name}' as v{profile.Version}." : "No changes to save.";
             if (changed && askToReapply && Service.IsActive(profile.Name)
-                && Dialogs.Confirm($"'{profile.Name}' is on. Apply v{profile.Version} to the environment now?"))
+                && Dialogs.Confirm($"Apply v{profile.Version} of '{profile.Name}' now?",
+                    "The profile is on, and the environment still has the previous version.", "Apply now", "Later"))
                 Service.Apply(profile.Name);
         });
         if (saved && ReferenceEquals(editor, Editor))
@@ -145,11 +158,16 @@ public partial class ProfilesViewModel : ObservableObject
             Reload(name);
     }
 
-    [RelayCommand]
-    void Duplicate()
+    // Duplicate/Rename/Delete act on the given profile, or on the selection (context menu, F2, Ctrl+D, Del).
+
+    bool HasTarget(ProfileItemViewModel? item) => (item ?? Selected) is not null;
+
+    [RelayCommand(CanExecute = nameof(HasTarget))]
+    void Duplicate(ProfileItemViewModel? item)
     {
-        if (Selected is null) return;
-        var source = Selected.Name;
+        item ??= Selected;
+        if (item is null || !SaveIfEditing(item.Name, "duplicating")) return;
+        var source = item.Name;
         var name = Dialogs.Prompt("Duplicate profile", $"New name for the copy of '{source}':", source + "-copy");
         if (name is null) return;
         if (_main.Run(() =>
@@ -163,24 +181,45 @@ public partial class ProfilesViewModel : ObservableObject
             Reload(name);
     }
 
-    [RelayCommand]
-    void Rename()
+    [RelayCommand(CanExecute = nameof(HasTarget))]
+    void Rename(ProfileItemViewModel? item)
     {
-        if (Selected is null) return;
-        var old = Selected.Name;
+        item ??= Selected;
+        if (item is null || !SaveIfEditing(item.Name, "renaming")) return;
+        var old = item.Name;
         var name = Dialogs.Prompt("Rename profile", $"New name for '{old}':", old);
         if (name is null || name == old) return;
         if (_main.Run(() => Service.RenameProfile(old, name), $"Renamed '{old}' to '{name}'.")) Reload(name);
     }
 
-    [RelayCommand]
-    void Delete()
+    [RelayCommand(CanExecute = nameof(HasTarget))]
+    void Delete(ProfileItemViewModel? item)
     {
-        if (Selected is null) return;
-        var name = Selected.Name;
-        if (!Dialogs.Confirm($"Delete profile '{name}'?\n\nIts version history is kept and can be brought back by importing or creating a profile with the same name."))
-            return;
-        if (_main.Run(() => Service.DeleteProfile(name, purgeHistory: false), $"Deleted '{name}'.")) Reload();
+        item ??= Selected;
+        if (item is null) return;
+        var name = item.Name;
+        var active = Service.IsActive(name);
+        var details = (active ? "It is on: it will be turned off first, undoing its changes to the environment.\n\n" : "")
+                      + "Its version history is kept, so a profile with the same name can be rolled back to it.";
+        if (!Dialogs.ConfirmDanger($"Delete profile '{name}'?", details, "Delete")) return;
+
+        if (_main.Run(() =>
+            {
+                if (active) Service.Unapply(name);
+                Service.DeleteProfile(name, purgeHistory: false);
+            }, $"Deleted '{name}'{(active ? " (turned off first)" : "")}."))
+        {
+            Reload();
+            if (active) _main.CurrentEnv.Refresh();
+        }
+    }
+
+    /// <summary>Unsaved edits of <paramref name="name"/> would be lost or left out; offer to save them first.</summary>
+    bool SaveIfEditing(string name, string action)
+    {
+        if (Editor is not { IsDirty: true } || !SameName(Editor.Name, name)) return true;
+        return Dialogs.Confirm($"Save changes to '{name}'?", $"They have to be saved before {action}.", "Save")
+               && SaveEditor(askToReapply: false);
     }
 
     [RelayCommand]
@@ -188,35 +227,43 @@ public partial class ProfilesViewModel : ObservableObject
     {
         item ??= Selected;
         if (item is null) return;
-        if (Editor is { IsDirty: true } && SameName(Editor.Name, item.Name))
+        try
         {
-            if (!Dialogs.Confirm($"Save changes to '{item.Name}' first?")) return;
-            if (!SaveEditor(askToReapply: false)) return;
-        }
+            if (!SaveIfEditing(item.Name, "turning it on or off")) return;
 
-        var name = item.Name;
-        var turningOn = !Service.IsActive(name);
-        _main.Run(() =>
+            var name = item.Name;
+            var turningOn = !Service.IsActive(name);
+            _main.Run(() =>
+            {
+                var result = turningOn ? Service.Apply(name) : Service.Unapply(name);
+                var extra = result.TurnedOff.Where(o => !SameName(o, name)).ToList();
+                _main.Status = $"{(turningOn ? "Turned on" : "Turned off")} '{name}': {result.Changes.Count} variable(s) changed"
+                               + (extra.Count > 0 ? $"; turned off {string.Join(", ", extra)} (same group)" : "")
+                               + (result.Warnings.Count > 0 ? $". {string.Join(" ", result.Warnings)}" : ".")
+                               + " New terminals see the change.";
+            });
+            _main.CurrentEnv.Refresh();
+            _main.Backups.Refresh();
+        }
+        finally
         {
-            var result = turningOn ? Service.Apply(name) : Service.Unapply(name);
-            var extra = result.TurnedOff.Where(o => !SameName(o, name)).ToList();
-            _main.Status = $"{(turningOn ? "Turned on" : "Turned off")} '{name}': {result.Changes.Count} variable(s) changed"
-                           + (extra.Count > 0 ? $"; turned off {string.Join(", ", extra)} (same group)" : "")
-                           + (result.Warnings.Count > 0 ? $". {string.Join(" ", result.Warnings)}" : ".")
-                           + " New terminals see the change.";
-        });
-        RefreshActive();
-        _main.CurrentEnv.Refresh();
-        _main.Backups.Refresh();
+            // The switch flips as soon as it is clicked; put every switch back to the real state
+            // (also after a failure, e.g. missing admin rights, or when the save prompt was declined).
+            RefreshActive();
+        }
     }
 
-    [RelayCommand]
+    bool HasUnsavedChanges() => Editor?.IsDirty == true;
+
+    [RelayCommand(CanExecute = nameof(HasUnsavedChanges))]
     void Save() => SaveEditor(askToReapply: true);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasUnsavedChanges))]
     void Discard()
     {
-        if (Editor is { IsDirty: true } && !Dialogs.Confirm("Discard unsaved changes?")) return;
+        if (Editor is { IsDirty: true } editor
+            && !Dialogs.ConfirmDanger("Discard unsaved changes?", $"Your edits to '{editor.Name}' will be lost.", "Discard"))
+            return;
         LoadEditor();
     }
 
@@ -293,7 +340,8 @@ public partial class ProfilesViewModel : ObservableObject
         if (Editor is null || SelectedVersion is null) return;
         var name = Editor.Name;
         var version = SelectedVersion.Version;
-        if (!Dialogs.Confirm($"Make v{version} of '{name}' current again?\n\nIt is saved as a new version; nothing in the history is lost."))
+        if (!Dialogs.Confirm($"Roll '{name}' back to v{version}?",
+                "It is saved as a new version, so nothing in the history is lost.", "Roll back"))
             return;
         if (_main.Run(() =>
             {
@@ -309,23 +357,6 @@ public partial class ProfilesViewModel : ObservableObject
         if (Editor is null || SelectedVersion is null) return;
         _main.Compare.Run($"{Editor.Name}@{SelectedVersion.Version}", Editor.Name);
         _main.SelectedTab = Tabs.Compare;
-    }
-
-    [RelayCommand]
-    void OpenJson()
-    {
-        if (Editor is null) return;
-        Shell.Open(Service.Profiles.FileOf(Editor.Name));
-        _main.Status = "Edits saved in another editor become a new version when you come back to EnvDeck.";
-    }
-
-    [RelayCommand]
-    void CopyShellCommand()
-    {
-        if (Editor is null) return;
-        var command = $"envdeck shell {Editor.Name} | Invoke-Expression";
-        Clipboard.SetText(command);
-        _main.Status = $"Copied: {command}  (loads the profile into one PowerShell session only)";
     }
 
     HashSet<string> ActiveNames() =>
@@ -347,6 +378,13 @@ public partial class ProfileItemViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsActive { get; set; }
+
+    /// <summary>Sets the state and always notifies, so a switch the user flipped is reset even when nothing changed.</summary>
+    public void SyncActive(bool active)
+    {
+        IsActive = active;
+        OnPropertyChanged(nameof(IsActive));
+    }
 
     [ObservableProperty]
     public partial string Subtitle { get; set; } = "";

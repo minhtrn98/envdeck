@@ -412,15 +412,19 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
     public ObservableCollection<DoctorIssue> Issues { get; } = [];
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial string DataDir { get; set; } = "";
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial int HistoryLimit { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial bool AutoBackup { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial int AutoBackupLimit { get; set; }
 
     [ObservableProperty]
@@ -437,19 +441,34 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
         Info = $"Data folder in use: {p.DataDir}\nMachine state: {p.StateDir}\n" +
                $"Version {DeckService.ToolVersion}{(main.Service.Env.IsSandbox ? " · sandbox mode" : "")}" +
                $"{(main.IsElevated ? " · running as administrator" : "")}";
+        SaveCommand.NotifyCanExecuteChanged();
     }
 
-    [RelayCommand]
+    string? NewDataDir => string.IsNullOrWhiteSpace(DataDir) ? null : DataDir.Trim();
+
+    /// <summary>Save settings is enabled only when something differs from what is stored.</summary>
+    bool HasChanges()
+    {
+        var s = main.Service.Settings;
+        return !string.Equals(NewDataDir, s.DataDir, StringComparison.OrdinalIgnoreCase)
+               || Math.Max(1, HistoryLimit) != s.HistoryLimit
+               || AutoBackup != s.AutoBackup
+               || Math.Max(1, AutoBackupLimit) != s.AutoBackupLimit;
+    }
+
+    [RelayCommand(CanExecute = nameof(HasChanges))]
     void Save()
     {
         var s = main.Service.Settings;
-        var newDir = string.IsNullOrWhiteSpace(DataDir) ? null : DataDir.Trim();
+        var newDir = NewDataDir;
         var dirChanged = !string.Equals(newDir, s.DataDir, StringComparison.OrdinalIgnoreCase);
         s.DataDir = newDir;
         s.HistoryLimit = Math.Max(1, HistoryLimit);
         s.AutoBackup = AutoBackup;
         s.AutoBackupLimit = Math.Max(1, AutoBackupLimit);
-        if (!main.Run(main.Service.SaveSettings, "Settings saved.")) return;
+        var saved = main.Run(main.Service.SaveSettings, "Settings saved.");
+        SaveCommand.NotifyCanExecuteChanged();
+        if (!saved) return;
         if (dirChanged)
         {
             main.ReloadService();

@@ -58,6 +58,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial string Status { get; set; } = "Ready";
 
+    // The status bar is one line; multi-line messages (e.g. validation errors) stay readable in its tooltip.
+    partial void OnStatusChanged(string value)
+    {
+        var flat = string.Join(" ", value.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        if (flat != value) Status = flat;
+    }
+
     [ObservableProperty]
     public partial int SelectedTab { get; set; }
 
