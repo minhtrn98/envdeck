@@ -56,6 +56,18 @@ public static class DeckJson
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var tmp = path + ".tmp";
         File.WriteAllText(tmp, Serialize(value) + Environment.NewLine, Utf8NoBom);
-        File.Move(tmp, path, overwrite: true);
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(tmp, path, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < 5 && ex is IOException or UnauthorizedAccessException)
+            {
+                // Antivirus, the search indexer or OneDrive may hold the target for a moment.
+                Thread.Sleep(50 * attempt);
+            }
+        }
     }
 }
