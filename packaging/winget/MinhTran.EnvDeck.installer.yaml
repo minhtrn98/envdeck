@@ -17,9 +17,9 @@ Dependencies:
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/minhtrn98/envdeck/releases/download/v0.1.0/EnvDeck-0.1.0-win-x64-setup.exe
-    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    InstallerSha256: 9CF086B566ECB35D33CEB776C3AC55132D2EB7B9C71D07DEE50A57823F0B7971
   - Architecture: arm64
     InstallerUrl: https://github.com/minhtrn98/envdeck/releases/download/v0.1.0/EnvDeck-0.1.0-win-arm64-setup.exe
-    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    InstallerSha256: 49CD5DF36F79B809AAA7BF9A843302B932F9D0F882735F42E451DE419E8FDAD7
 ManifestType: installer
 ManifestVersion: 1.10.0
