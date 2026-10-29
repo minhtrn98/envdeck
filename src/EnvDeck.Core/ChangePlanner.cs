@@ -14,6 +14,9 @@ public sealed record PlannedChange(
     ValueKind? AfterKind,
     IReadOnlyList<string> AddedEntries)
 {
+    /// <summary>All list entries the profile asked for (Prepend/Append), whether or not they were already there.</summary>
+    public IReadOnlyList<string> RequestedEntries { get; init; } = [];
+
     public bool IsNoOp => Before == After && (After is null || BeforeKind == AfterKind);
 
     public ChangeAction Action =>
@@ -32,6 +35,7 @@ public sealed record PlannedChange(
         After = After,
         AfterKind = AfterKind,
         AddedEntries = AddedEntries.Count > 0 ? AddedEntries.ToList() : null,
+        RequestedEntries = RequestedEntries.Count > 0 ? RequestedEntries.ToList() : null,
     };
 }
 
@@ -56,6 +60,7 @@ public static partial class ChangePlanner
             var after = current?.Value;
             var afterKind = current?.Kind;
             var added = new List<string>();
+            var requested = new List<string>();
 
             foreach (var v in group)
             {
@@ -87,6 +92,7 @@ public static partial class ChangePlanner
                             entries.AddRange(incoming.Where(e => !PathList.Contains(existing, e)));
                         }
                         added.AddRange(incoming.Where(e => !PathList.Contains(original, e) && !PathList.Contains(added, e)));
+                        requested.AddRange(incoming.Where(e => !PathList.Contains(requested, e)));
 
                         // Keep the stored text byte-for-byte when the entry order did not actually change.
                         after = entries.SequenceEqual(existing) ? after : PathList.Join(entries);
@@ -99,7 +105,7 @@ public static partial class ChangePlanner
             }
 
             result.Add(new PlannedChange(first.Scope, current?.Name ?? first.Name, current?.Value, current?.Kind,
-                after, after is null ? null : afterKind, added));
+                after, after is null ? null : afterKind, added) { RequestedEntries = requested });
         }
         return result;
     }

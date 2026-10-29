@@ -242,17 +242,32 @@ public sealed class DeckService
                     later[0].BeforeKind = c.BeforeKind;
                     continue;
                 }
+                // An entry we added that a later profile also asked for stays in the list: the last such profile
+                // takes it over (it is removed when that profile is turned off). The others are removed now.
+                var released = new List<string>();
+                foreach (var e in added)
+                {
+                    var owner = later.FindLastIndex(l => PathList.Contains(l.RequestedEntries ?? [], e));
+                    if (owner < 0) released.Add(e);
+                    else if (!PathList.Contains(later[owner].AddedEntries ?? [], e)) (later[owner].AddedEntries ??= []).Add(e);
+
+                    // Journals up to the owner must no longer expect the entry before them; the owner and the
+                    // profiles after it still see it in the list they produced.
+                    for (var j = 0; j < later.Count; j++)
+                    {
+                        if (owner < 0 || j <= owner) later[j].Before = RemoveEntry(later[j].Before, e);
+                        if (owner < 0 || j < owner) later[j].After = RemoveEntry(later[j].After, e);
+                    }
+                }
                 foreach (var l in later)
                 {
-                    if (l.Before is not null) l.Before = PathList.Remove(l.Before, added);
-                    if (l.After is not null) l.After = PathList.Remove(l.After, added);
                     if (!c.ExistedBefore && string.IsNullOrEmpty(l.Before))
                     {
                         l.ExistedBefore = false;
                         l.Before = null;
                     }
                 }
-                target = current is null ? null : PathList.Remove(current.Value, added);
+                target = current is null ? null : PathList.Remove(current.Value, released);
                 targetKind = current?.Kind;
             }
             else if (c.After is null ? current is null : current?.Value == c.After)
@@ -280,6 +295,8 @@ public sealed class DeckService
             changes.Add(change);
         }
         state.Applied.RemoveAt(index);
+
+        static string? RemoveEntry(string? value, string entry) => value is null ? null : PathList.Remove(value, [entry]);
     }
 
     public List<ActiveProfileStatus> Status()

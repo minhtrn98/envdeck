@@ -175,6 +175,12 @@ public sealed class AppliedChange
     /// <summary>List entries (Prepend/Append) that did not exist before; removed again on turn-off.</summary>
     public List<string>? AddedEntries { get; set; }
 
+    /// <summary>
+    /// Every list entry the profile asked for, including ones that were already there. When another profile
+    /// that added one of them is turned off, the entry stays and this profile takes it over.
+    /// </summary>
+    public List<string>? RequestedEntries { get; set; }
+
     public AppliedChange Clone() => new()
     {
         Scope = Scope,
@@ -185,6 +191,7 @@ public sealed class AppliedChange
         After = After,
         AfterKind = AfterKind,
         AddedEntries = AddedEntries?.ToList(),
+        RequestedEntries = RequestedEntries?.ToList(),
     };
 }
 

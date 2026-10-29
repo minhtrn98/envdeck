@@ -91,6 +91,57 @@ public class ApplyTests
         Assert.Null(t.Get("FOO")); // FOO did not exist before a
     }
 
+    [Theory]
+    [InlineData("a", "b")]
+    [InlineData("b", "a")]
+    public void A_list_entry_two_profiles_ask_for_stays_until_both_are_off(string firstOff, string secondOff)
+    {
+        using var t = new TestDeck();
+        t.Set("Path", @"C:\Windows");
+        t.Save("a", Var("Path", @"C:\X", VarOp.Prepend));
+        t.Save("b", Var("Path", @"C:\X;C:\Y", VarOp.Prepend));
+        t.Service.Apply("a");
+        t.Service.Apply("b");
+        Assert.Equal(@"C:\X;C:\Y;C:\Windows", t.Get("Path"));
+
+        t.Service.Unapply(firstOff);
+        Assert.Contains(@"C:\X", PathList.Split(t.Get("Path"))); // the other profile still asks for it
+        Assert.Equal(secondOff == "b", PathList.Contains(PathList.Split(t.Get("Path")), @"C:\Y"));
+
+        t.Service.Unapply(secondOff);
+        Assert.Equal(@"C:\Windows", t.Get("Path"));
+    }
+
+    [Theory]
+    [InlineData("a", "m", "b")]
+    [InlineData("a", "b", "m")]
+    [InlineData("m", "a", "b")]
+    [InlineData("b", "m", "a")]
+    public void Shared_list_entries_survive_any_turn_off_order_with_a_profile_in_between(string first, string second, string third)
+    {
+        using var t = new TestDeck();
+        t.Set("Path", @"C:\Windows");
+        t.Save("a", Var("Path", @"C:\X", VarOp.Prepend));
+        t.Save("m", Var("Path", @"C:\M", VarOp.Prepend));
+        t.Save("b", Var("Path", @"C:\X", VarOp.Prepend));
+        foreach (var p in new[] { "a", "m", "b" }) t.Service.Apply(p);
+
+        var wanted = new Dictionary<string, string> { ["a"] = @"C:\X", ["m"] = @"C:\M", ["b"] = @"C:\X" };
+        var on = new List<string> { "a", "m", "b" };
+        foreach (var p in new[] { first, second, third })
+        {
+            t.Service.Unapply(p);
+            on.Remove(p);
+            var entries = PathList.Split(t.Get("Path"));
+            foreach (var still in on) Assert.Contains(wanted[still], entries);
+            Assert.Equal(on.Count == 0 ? 1 : entries.Count, entries.Count);
+            Assert.Contains(@"C:\Windows", entries);
+            if (!on.Any(o => wanted[o] == @"C:\X")) Assert.DoesNotContain(@"C:\X", entries);
+            if (!on.Contains("m")) Assert.DoesNotContain(@"C:\M", entries);
+        }
+        Assert.Equal(@"C:\Windows", t.Get("Path"));
+    }
+
     [Fact]
     public void Turning_off_after_an_outside_change_only_removes_own_list_entries_and_keeps_edited_values()
     {
