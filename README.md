@@ -155,6 +155,22 @@ packaging/         Inno Setup script and winget manifest templates
 3. Later releases: set the repository variable `WINGET_ENABLED=true` and the secret `WINGET_TOKEN`; the workflow
    opens the winget PR for you.
 
+## Installing with Scoop
+
+Add this repository as a bucket and install EnvDeck:
+
+```powershell
+scoop bucket add envdeck https://github.com/minhtrn98/envdeck
+scoop install envdeck
+```
+
+The bucket manifest supports x64 and ARM64 and provides both the `envdeck` CLI and a Start menu shortcut.
+EnvDeck requires the .NET 10 Desktop Runtime; install it with
+`winget install Microsoft.DotNet.DesktopRuntime.10` if it is not already present.
+
+The manifest is in `bucket/EnvDeck.json`. When publishing a new version, update its version, download URLs,
+and SHA256 hashes from the release ZIPs so Scoop users can install the new release.
+
 ## License
 
 MIT

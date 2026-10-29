@@ -1,0 +1,37 @@
+{
+    "version": "0.1.2",
+    "description": "Profile-based manager for Windows environment variables",
+    "homepage": "https://github.com/minhtrn98/envdeck",
+    "license": "MIT",
+    "notes": "Requires the .NET 10 Desktop Runtime.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/minhtrn98/envdeck/releases/download/v0.1.2/EnvDeck-0.1.2-win-x64.zip",
+            "hash": "4aa65a96e56d10179f84c21a636279eed3d95a7e6ff1db1d098c6eaf4007f645"
+        },
+        "arm64": {
+            "url": "https://github.com/minhtrn98/envdeck/releases/download/v0.1.2/EnvDeck-0.1.2-win-arm64.zip",
+            "hash": "19fb3181c65bafb59d836d2533cccebc5cbae21331ac453d43afff6e87ea55ae"
+        }
+    },
+    "bin": "envdeck.exe",
+    "shortcuts": [
+        [
+            "EnvDeck.App.exe",
+            "EnvDeck"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/minhtrn98/envdeck"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/minhtrn98/envdeck/releases/download/v$version/EnvDeck-$version-win-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/minhtrn98/envdeck/releases/download/v$version/EnvDeck-$version-win-arm64.zip"
+            }
+        }
+    }
+}
