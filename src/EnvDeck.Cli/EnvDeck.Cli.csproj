@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>envdeck</AssemblyName>
+    <RootNamespace>EnvDeck.Cli</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnvDeck.Core\EnvDeck.Core.csproj" />
+  </ItemGroup>
+
+</Project>

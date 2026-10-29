@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+PackageIdentifier: MinhTran.EnvDeck
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Trần Công Minh
+PublisherUrl: https://github.com/minhtrn98
+PackageName: EnvDeck
+PackageUrl: https://github.com/minhtrn98/envdeck
+License: MIT
+LicenseUrl: https://github.com/minhtrn98/envdeck/blob/master/LICENSE
+ShortDescription: Profile-based manager for Windows environment variables, with a native window and a CLI.
+Description: |-
+  EnvDeck keeps per-project environment variables (JAVA_HOME, PATH entries, SDK paths...) in JSON profiles
+  that you turn on and off. Turning a profile off restores exactly what it changed. Profiles are versioned,
+  every change is backed up first, and a single bundle moves everything to a new machine.
+Moniker: envdeck
+Tags:
+  - environment-variables
+  - path
+  - developer-tools
+  - profiles
+  - cli
+ReleaseNotesUrl: https://github.com/minhtrn98/envdeck/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

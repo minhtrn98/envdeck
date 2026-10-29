@@ -1,0 +1,44 @@
+name: Release
+
+# Push a tag such as v0.2.0 to build the zip + installers and publish a GitHub release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test EnvDeck.slnx -c Release
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Build artifacts
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          ./scripts/publish.ps1 -Version $version -Runtime win-x64
+          ./scripts/publish.ps1 -Version $version -Runtime win-arm64
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/dist/*
+          generate_release_notes: true
+
+  # Opens a PR on microsoft/winget-pkgs for every release after the first one was merged manually.
+  # Needs repository variable WINGET_ENABLED=true and secret WINGET_TOKEN (classic PAT, public_repo scope).
+  winget:
+    needs: release
+    if: vars.WINGET_ENABLED == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: MinhTran.EnvDeck
+          installers-regex: '-setup\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

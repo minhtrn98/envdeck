@@ -1,0 +1,11 @@
+<Application x:Class="EnvDeck.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="clr-namespace:EnvDeck.App"
+             ThemeMode="System">
+    <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <app:NullToCollapsedConverter x:Key="NullToCollapsed" />
+        <app:NullToCollapsedConverter x:Key="NotNullToCollapsed" Invert="True" />
+    </Application.Resources>
+</Application>

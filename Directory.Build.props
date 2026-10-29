@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <Version>0.1.0</Version>
+    <Product>EnvDeck</Product>
+    <Authors>Trần Công Minh</Authors>
+    <Copyright>Copyright (c) 2026 Trần Công Minh</Copyright>
+    <Description>Profile-based Windows environment variable manager.</Description>
+    <RepositoryUrl>https://github.com/minhtrn98/envdeck</RepositoryUrl>
+  </PropertyGroup>
+</Project>

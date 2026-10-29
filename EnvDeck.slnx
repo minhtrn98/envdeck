@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EnvDeck.App/EnvDeck.App.csproj" />
+    <Project Path="src/EnvDeck.Cli/EnvDeck.Cli.csproj" />
+    <Project Path="src/EnvDeck.Core/EnvDeck.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnvDeck.Core.Tests/EnvDeck.Core.Tests.csproj" />
+  </Folder>
+</Solution>

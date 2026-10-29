@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="profile.schema.json" LogicalName="EnvDeck.Core.profile.schema.json" />
+    <InternalsVisibleTo Include="EnvDeck.Core.Tests" />
+  </ItemGroup>
+
+</Project>

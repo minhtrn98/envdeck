@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnvDeck profile",
+  "description": "A named set of Windows environment variable changes that can be turned on and off.",
+  "type": "object",
+  "required": ["name", "variables"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+      "description": "Must match the file name (without .json)."
+    },
+    "description": { "type": "string" },
+    "group": {
+      "type": "string",
+      "description": "Profiles in the same group are mutually exclusive: turning one on turns the others off (e.g. \"java\")."
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "version": { "type": "integer", "minimum": 0, "description": "Managed by EnvDeck." },
+    "updatedAt": { "type": "string", "format": "date-time", "description": "Managed by EnvDeck." },
+    "variables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "pattern": "^[^=\\s][^=]*$" },
+          "value": {
+            "type": "string",
+            "description": "%VAR% references are kept and expanded by Windows (REG_EXPAND_SZ). For Prepend/Append: ';'-separated entries."
+          },
+          "scope": {
+            "enum": ["User", "Machine"],
+            "default": "User",
+            "description": "User = HKCU (no admin). Machine = HKLM (needs admin). Note: Windows puts the Machine Path before the User Path."
+          },
+          "op": {
+            "enum": ["Set", "Remove", "Prepend", "Append"],
+            "default": "Set",
+            "description": "Set: overwrite. Remove: delete. Prepend/Append: add entries to a list variable such as Path."
+          },
+          "kind": {
+            "enum": ["String", "ExpandString"],
+            "description": "Registry type. Omit for automatic (ExpandString when the value contains %VAR%)."
+          },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}
