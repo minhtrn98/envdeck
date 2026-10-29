@@ -7,5 +7,14 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <app:NullToCollapsedConverter x:Key="NullToCollapsed" />
         <app:NullToCollapsedConverter x:Key="NotNullToCollapsed" Invert="True" />
+
+        <!-- DataGrid cells: the default column styles leave text at the top of the row. -->
+        <Style x:Key="CellText" TargetType="TextBlock" BasedOn="{x:Static DataGridTextColumn.DefaultElementStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="CellCombo" TargetType="ComboBox" BasedOn="{x:Static DataGridComboBoxColumn.DefaultElementStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
     </Application.Resources>
 </Application>

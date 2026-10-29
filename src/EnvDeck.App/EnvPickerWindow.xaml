@@ -37,15 +37,15 @@
                     <DataGridTemplateColumn Header="" Width="44">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type vm:PickVariable}">
-                                <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}" MinWidth="0"
+                                <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}" MinWidth="0" VerticalAlignment="Center"
                                           HorizontalAlignment="Center" ToolTip="{l:Tr AddWholeValueTip}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="80" />
-                    <DataGridTextColumn Header="{l:Tr ColName}" Binding="{Binding Name}" Width="190" />
-                    <DataGridTextColumn Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
-                    <DataGridTextColumn Header="{l:Tr ColAddsAs}" Binding="{Binding Mode}" Width="140" />
+                    <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="80" />
+                    <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Binding="{Binding Name}" Width="190" />
+                    <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
+                    <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAddsAs}" Binding="{Binding Mode}" Width="140" />
                 </DataGrid.Columns>
             </DataGrid>
 

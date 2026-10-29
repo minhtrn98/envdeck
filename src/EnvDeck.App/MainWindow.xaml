@@ -59,6 +59,7 @@
         <Style x:Key="DiffSymbol" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Kind}" Value="Added">
                     <Setter Property="Foreground" Value="#2E9E4F" />
@@ -260,20 +261,20 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridComboBoxColumn Header="{l:Tr ColScope}" Width="100"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColScope}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Scopes}"
                                                         SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn Header="{l:Tr ColOp}" Width="100"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColOp}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Ops}"
                                                         SelectedItemBinding="{Binding Op, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="{l:Tr ColName}" Width="190"
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="{l:Tr ColValue}" Width="*"
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Width="*"
                                                     Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn Header="{l:Tr ColKind}" Width="120"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColKind}" Width="120"
                                                         ItemsSource="{x:Static vm:Options.Kinds}"
                                                         SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="{l:Tr ColNote}" Width="150"
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColNote}" Width="150"
                                                     Binding="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -293,10 +294,10 @@
                                         <DataGrid ItemsSource="{Binding Preview}" AutoGenerateColumns="False" IsReadOnly="True"
                                                   HeadersVisibility="Column">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="{l:Tr ColAction}" Binding="{Binding Action}" Width="100" />
-                                                <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
-                                                <DataGridTextColumn Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
-                                                <DataGridTextColumn Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAction}" Binding="{Binding Action}" Width="100" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </DockPanel>
@@ -311,10 +312,10 @@
                                         <DataGrid ItemsSource="{Binding History}" SelectedItem="{Binding SelectedVersion}"
                                                   AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="{l:Tr ColVersion}" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
-                                                <DataGridTextColumn Header="{l:Tr ColSaved}" Width="200"
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVersion}" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColSaved}" Width="200"
                                                                     Binding="{Binding SavedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" />
-                                                <DataGridTextColumn Header="{l:Tr ColVariables}" Binding="{Binding VariableCount}" Width="*" />
+                                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariables}" Binding="{Binding VariableCount}" Width="*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </DockPanel>
@@ -351,10 +352,10 @@
                     <DataGrid x:Name="EnvGrid" Grid.Row="1" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="90" />
-                            <DataGridTextColumn Header="{l:Tr ColName}" Binding="{Binding Name}" Width="240" />
-                            <DataGridTextColumn Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
-                            <DataGridTextColumn Header="{l:Tr ColKind}" Binding="{Binding Kind}" Width="110" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="90" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Binding="{Binding Name}" Width="240" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColKind}" Binding="{Binding Kind}" Width="110" />
                         </DataGrid.Columns>
                     </DataGrid>
                     <TextBlock Grid.Row="2" Style="{StaticResource Hint}" Margin="0,10,0,4" Text="{l:Tr EntriesHint}" />
@@ -397,14 +398,14 @@
                     <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{l:Tr ColId}" Binding="{Binding Id}" Width="150" />
-                            <DataGridTextColumn Header="{l:Tr ColCreated}" Binding="{Binding Created}" Width="150" />
-                            <DataGridTextColumn Header="{l:Tr ColType}" Binding="{Binding Type}" Width="80" />
-                            <DataGridTextColumn Header="{l:Tr ColNoteReason}" Binding="{Binding Description}" Width="*" />
-                            <DataGridTextColumn Header="{l:Tr ColUser}" Binding="{Binding UserCount}" Width="60" />
-                            <DataGridTextColumn Header="{l:Tr ColMachine}" Binding="{Binding MachineCount}" Width="80" />
-                            <DataGridTextColumn Header="{l:Tr ColHost}" Binding="{Binding Host}" Width="140" />
-                            <DataGridTextColumn Header="{l:Tr ColProfilesOn}" Binding="{Binding ActiveProfiles}" Width="160" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColId}" Binding="{Binding Id}" Width="150" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColCreated}" Binding="{Binding Created}" Width="150" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColType}" Binding="{Binding Type}" Width="80" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColNoteReason}" Binding="{Binding Description}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColUser}" Binding="{Binding UserCount}" Width="60" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColMachine}" Binding="{Binding MachineCount}" Width="80" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColHost}" Binding="{Binding Host}" Width="140" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColProfilesOn}" Binding="{Binding ActiveProfiles}" Width="160" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -440,10 +441,10 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="220" />
-                            <DataGridTextColumn Header="{l:Tr ColLeft}" Binding="{Binding Left}" Width="*" />
-                            <DataGridTextColumn Header="{l:Tr ColRight}" Binding="{Binding Right}" Width="*" />
-                            <DataGridTextColumn Header="{l:Tr ColListEntries}" Binding="{Binding Details}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="220" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColLeft}" Binding="{Binding Left}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColRight}" Binding="{Binding Right}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColListEntries}" Binding="{Binding Details}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -473,9 +474,9 @@
                     <DataGrid x:Name="SearchGrid" ItemsSource="{Binding Results}" AutoGenerateColumns="False"
                               IsReadOnly="True" HeadersVisibility="Column" MouseDoubleClick="SearchGrid_MouseDoubleClick">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{l:Tr ColSource}" Binding="{Binding Source}" Width="200" />
-                            <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="240" />
-                            <DataGridTextColumn Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColSource}" Binding="{Binding Source}" Width="200" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="240" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
