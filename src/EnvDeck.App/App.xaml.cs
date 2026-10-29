@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Threading;
+using EnvDeck.App.Localization;
 using EnvDeck.Core;
 
 namespace EnvDeck.App;
@@ -19,7 +20,7 @@ public partial class App : Application
         }
         catch (DeckException ex)
         {
-            ShowError("EnvDeck could not start", ex.Message);
+            ShowError("CouldNotStart", "EnvDeck could not start", ex.Message);
             Shutdown(1);
         }
     }
@@ -27,19 +28,19 @@ public partial class App : Application
     static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
-        ShowError("Something unexpected happened", e.Exception.ToString());
+        ShowError("Unexpected", "Something unexpected happened", e.Exception.ToString());
     }
 
-    static void ShowError(string heading, string details)
+    static void ShowError(string headingKey, string fallbackHeading, string details)
     {
         try
         {
-            Dialogs.Error(details, heading);
+            Dialogs.Error(details, L.T(headingKey));
         }
         catch (Exception)
         {
-            // The UI itself may be what is broken; the Win32 box always works.
-            MessageBox.Show(details, heading, MessageBoxButton.OK, MessageBoxImage.Error);
+            // The UI (or the translations) may be what is broken; the Win32 box always works.
+            MessageBox.Show(details, fallbackHeading, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

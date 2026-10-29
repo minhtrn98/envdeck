@@ -21,6 +21,7 @@ in the meantime.
 - **Doctor** — missing or duplicate `PATH` folders, broken profiles, profiles that drifted.
 - **Session only** — `envdeck shell <profile> | Invoke-Expression` loads a profile into one terminal without
   touching the registry.
+- **English / Tiếng Việt** — the window follows the Windows display language; switch any time in Settings.
 
 ## Install
 

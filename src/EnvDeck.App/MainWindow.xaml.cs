@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using EnvDeck.App.Localization;
 using EnvDeck.App.ViewModels;
 
 namespace EnvDeck.App;
@@ -25,8 +26,8 @@ public partial class MainWindow : Window
     {
         if (_vm.Profiles.Editor is { IsDirty: true } editor)
         {
-            var answer = Dialogs.Ask($"Save changes to '{editor.Name}'?",
-                "EnvDeck is closing; unsaved edits are lost otherwise.", "Save", "Don't save");
+            var answer = Dialogs.Ask(L.T("SaveChangesHeading", editor.Name), L.T("SaveBeforeCloseBody"),
+                L.T("Save"), L.T("DontSave"));
             if (answer == DialogChoice.Cancel) e.Cancel = true;
             else if (answer == DialogChoice.Primary) _vm.Profiles.SaveCommand.Execute(null);
         }

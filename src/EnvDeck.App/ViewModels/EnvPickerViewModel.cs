@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using EnvDeck.App.Localization;
 using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
@@ -38,7 +39,10 @@ public partial class EnvPickerViewModel : ObservableObject
     public partial string ScopeFilter { get; set; } = "All";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EntriesTitle))]
     public partial PickVariable? Current { get; set; }
+
+    public string EntriesTitle => Current is null ? L.T("Entries") : L.T("EntriesOf", Current.Name);
 
     [ObservableProperty]
     public partial bool Portable { get; set; } = true;
@@ -48,7 +52,7 @@ public partial class EnvPickerViewModel : ObservableObject
         get
         {
             var picked = Items.Where(i => i.Mode.Length > 0).ToList();
-            return picked.Count == 0 ? "Nothing selected" : $"{picked.Count} variable(s) selected";
+            return picked.Count == 0 ? L.T("NothingSelected") : L.T("VariablesSelected", picked.Count);
         }
     }
 
@@ -112,7 +116,12 @@ public partial class PickVariable : ObservableObject
         get
         {
             var entries = Entries.Count(e => e.IsChecked);
-            return entries > 0 ? $"Prepend {entries} entr{(entries == 1 ? "y" : "ies")}" : IsChecked ? "Set (whole value)" : "";
+            return entries switch
+            {
+                1 => L.T("ModePrependOne"),
+                > 1 => L.T("ModePrependMany", entries),
+                _ => IsChecked ? L.T("ModeSet") : "",
+            };
         }
     }
 

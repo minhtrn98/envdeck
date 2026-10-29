@@ -229,6 +229,9 @@ public sealed class DeckSettings
 
     /// <summary>Command used by "envdeck edit"; defaults to VS Code when available, otherwise Notepad.</summary>
     public string? Editor { get; set; }
+
+    /// <summary>UI language of the desktop app ("en", "vi"); null follows Windows.</summary>
+    public string? Language { get; set; }
 }
 
 public sealed class BundleManifest

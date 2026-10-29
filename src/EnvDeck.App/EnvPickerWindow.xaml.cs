@@ -1,4 +1,5 @@
 using System.Windows;
+using EnvDeck.App.Localization;
 using EnvDeck.App.ViewModels;
 using EnvDeck.Core;
 
@@ -22,7 +23,7 @@ public partial class EnvPickerWindow : Window
         Result = _vm.BuildResult();
         if (Result.Count == 0)
         {
-            Dialogs.Info("Nothing selected", "Tick at least one variable or list entry.");
+            Dialogs.Info(L.T("NothingSelected"), L.T("PickerNothingBody"));
             return;
         }
         DialogResult = true;

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnvDeck.App.Localization;
 using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
@@ -84,24 +85,21 @@ public partial class EnvironmentViewModel : ObservableObject
         var rows = selected?.OfType<EnvRow>().ToList() ?? [];
         if (rows.Count == 0)
         {
-            Dialogs.Info("Nothing selected", "Select one or more variables to capture (Ctrl+click for several).");
+            Dialogs.Info(L.T("NothingSelected"), L.T("CaptureSelectBody"));
             return;
         }
-        var target = Dialogs.Prompt("Capture into profile",
-            $"Copy {rows.Count} variable(s) into profile (new or existing):",
+        var target = Dialogs.Prompt(L.T("CaptureTitle"), L.T("CaptureLabel", rows.Count),
             _main.Profiles.Selected?.Name ?? "",
             _main.Profiles.Items.Select(p => p.Name));
         if (target is null) return;
-        var answer = Dialogs.Ask("Make paths portable?",
-            "C:\\Users\\you\\... becomes %USERPROFILE%\\..., so the profile also works on another machine or account.",
-            "Make portable", "Keep as is");
+        var answer = Dialogs.Ask(L.T("PortableHeading"), L.T("PortableBody"), L.T("MakePortable"), L.T("KeepAsIs"));
         if (answer == DialogChoice.Cancel) return;
         var portable = answer == DialogChoice.Primary;
 
         _main.Run(() =>
         {
             var (profile, warnings) = _main.Service.Capture(target, rows.Select(r => (r.Scope, r.Name)), portable);
-            _main.Status = $"Captured {rows.Count - warnings.Count} variable(s) into '{profile.Name}' (v{profile.Version}).";
+            _main.Status = L.T("Captured", rows.Count - warnings.Count, profile.Name, profile.Version);
             _main.Profiles.Reload(profile.Name);
             _main.SelectedTab = Tabs.Profiles;
         });
@@ -112,7 +110,7 @@ public partial class EnvironmentViewModel : ObservableObject
     {
         if (Selected is null) return;
         Clipboard.SetText(Selected.Value);
-        _main.Status = $"Copied the value of {Selected.Name}.";
+        _main.Status = L.T("CopiedValue", Selected.Name);
     }
 
     [RelayCommand]
@@ -127,7 +125,7 @@ public sealed class BackupRow(EnvSnapshot s)
 
     public string Created { get; } = s.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-    public string Type { get; } = s.Auto ? "auto" : "manual";
+    public string Type { get; } = L.T(s.Auto ? "BackupAuto" : "BackupManual");
 
     public string Description { get; } = s.Note ?? s.Reason ?? "";
 
@@ -169,12 +167,12 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
     [RelayCommand]
     void Create()
     {
-        var note = Dialogs.Prompt("Backup", "Note (optional), e.g. \"before reinstalling Windows\":");
+        var note = Dialogs.Prompt(L.T("BackupTitle"), L.T("BackupNoteLabel"));
         if (note is null) return;
         main.Run(() =>
         {
             var s = main.Service.Backup(Options.Scopes, note);
-            main.Status = $"Backup {s.Id}: {s.UserVariables?.Count} user and {s.MachineVariables?.Count} machine variables.";
+            main.Status = L.T("BackupCreated", s.Id, s.UserVariables?.Count, s.MachineVariables?.Count);
         });
         Refresh();
         main.Compare.RefreshSources();
@@ -190,7 +188,7 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
         if (RestoreMachine) scopes.Add(EnvScope.Machine);
         if (scopes.Count == 0)
         {
-            Dialogs.Info("Nothing to restore", "Tick User and/or Machine to choose what to restore.");
+            Dialogs.Info(L.T("NothingToRestoreHeading"), L.T("NothingToRestoreBody"));
             return;
         }
 
@@ -199,18 +197,17 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
             var preview = main.Service.Restore(id, scopes, Prune, dryRun: true);
             if (preview.Changes.Count == 0)
             {
-                main.Status = $"The environment already matches backup {id}.";
+                main.Status = L.T("AlreadyMatchesBackup", id);
                 return;
             }
             var summary = string.Join("\n", preview.Changes.Take(15).Select(c =>
                 $"{(c.Action == ChangeAction.Delete ? "−" : c.Action == ChangeAction.Create ? "+" : "~")} {c.Scope}\\{c.Name}"));
-            if (preview.Changes.Count > 15) summary += $"\n… and {preview.Changes.Count - 15} more";
-            if (!Dialogs.Confirm($"Restore {preview.Changes.Count} variable(s) from backup {id}?",
-                    $"{summary}\n\nA backup of the current state is taken first, so this can be undone.", "Restore"))
+            if (preview.Changes.Count > 15) summary += "\n" + L.T("AndMore", preview.Changes.Count - 15);
+            if (!Dialogs.Confirm(L.T("RestoreHeading", preview.Changes.Count, id), L.T("RestoreBody", summary), L.T("Restore")))
                 return;
 
             var result = main.Service.Restore(id, scopes, Prune);
-            main.Status = $"Restored {result.Changes.Count} variable(s) from {id}. {string.Join(" ", result.Warnings)}";
+            main.Status = $"{L.T("Restored", result.Changes.Count, id)} {string.Join(" ", result.Warnings)}";
         });
         Refresh();
         main.CurrentEnv.Refresh();
@@ -222,8 +219,8 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
     {
         if (Selected is null) return;
         var id = Selected.Id;
-        if (!Dialogs.ConfirmDanger($"Delete backup {id}?", "The backup file is removed for good.", "Delete")) return;
-        main.Run(() => main.Service.Backups.Delete(id), $"Deleted backup {id}.");
+        if (!Dialogs.ConfirmDanger(L.T("DeleteBackupHeading", id), L.T("DeleteBackupBody"), L.T("Delete"))) return;
+        main.Run(() => main.Service.Backups.Delete(id), L.T("DeletedBackup", id));
         Refresh();
     }
 
@@ -279,7 +276,14 @@ public partial class CompareViewModel(MainViewModel main) : ObservableObject
     public partial bool ShowSame { get; set; }
 
     [ObservableProperty]
-    public partial string Summary { get; set; } = "Pick two sources: a profile, profile@version, env, env:user, env:machine or backup:<id>.";
+    public partial string Summary { get; set; } = L.T("CompareIntro");
+
+    /// <summary>After a language change: rebuild the summary line.</summary>
+    public void RefreshTexts()
+    {
+        if (Rows.Count > 0) Run();
+        else Summary = L.T("CompareIntro");
+    }
 
     public void RefreshSources()
     {
@@ -306,10 +310,8 @@ public partial class CompareViewModel(MainViewModel main) : ObservableObject
         {
             var (l, r, rows) = main.Service.Diff(Left, Right, ShowSame);
             foreach (var row in rows) Rows.Add(new DiffRowViewModel(row));
-            Summary = $"{l.Label}  →  {r.Label}:  " +
-                      $"{rows.Count(x => x.Kind == DiffKind.Added)} added, " +
-                      $"{rows.Count(x => x.Kind == DiffKind.Removed)} removed, " +
-                      $"{rows.Count(x => x.Kind == DiffKind.Changed)} changed";
+            Summary = L.T("CompareSummary", l.Label, r.Label, rows.Count(x => x.Kind == DiffKind.Added),
+                rows.Count(x => x.Kind == DiffKind.Removed), rows.Count(x => x.Kind == DiffKind.Changed));
         });
     }
 
@@ -362,6 +364,8 @@ public partial class SearchViewModel(MainViewModel main) : ObservableObject
     [ObservableProperty]
     public partial string Summary { get; set; } = "";
 
+    public void RefreshTexts() => Summary = Results.Count > 0 ? L.T("SearchSummary", Results.Count) : "";
+
     [RelayCommand]
     void Run()
     {
@@ -379,7 +383,7 @@ public partial class SearchViewModel(MainViewModel main) : ObservableObject
                 Backups = InBackups,
             });
             foreach (var h in hits) Results.Add(new SearchHitRow(h));
-            Summary = $"{hits.Count} match(es)";
+            Summary = L.T("SearchSummary", hits.Count);
         });
     }
 
@@ -407,9 +411,18 @@ public partial class SearchViewModel(MainViewModel main) : ObservableObject
 
 // ------------------------------------------------------------------ settings & tools
 
+public sealed class IssueRow(DoctorIssue issue)
+{
+    public string Severity { get; } = L.T("Severity" + issue.Severity);
+
+    public string Message { get; } = issue.Message;
+}
+
 public partial class SettingsViewModel(MainViewModel main) : ObservableObject
 {
-    public ObservableCollection<DoctorIssue> Issues { get; } = [];
+    List<DoctorIssue> _issues = [];
+
+    public ObservableCollection<IssueRow> Issues { get; } = [];
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -430,17 +443,43 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
     [ObservableProperty]
     public partial string Info { get; set; } = "";
 
+    /// <summary>UI language; applied and stored right away (it is not part of "Save settings").</summary>
+    [ObservableProperty]
+    public partial string Language { get; set; } = Loc.Instance.Language;
+
+    partial void OnLanguageChanged(string value)
+    {
+        if (value == Loc.Instance.Language) return;
+        main.Service.Settings.Language = value;
+        main.Run(main.Service.SaveSettings);
+        Loc.Instance.SetLanguage(value);
+    }
+
+    /// <summary>After a language change: rebuild text made in code (the info block and doctor labels).</summary>
+    public void RefreshTexts()
+    {
+        UpdateInfo();
+        Issues.Clear();
+        foreach (var issue in _issues) Issues.Add(new IssueRow(issue));
+    }
+
+    void UpdateInfo()
+    {
+        var p = main.Service.Paths;
+        Info = L.T("SettingsInfo", p.DataDir, p.StateDir, DeckService.ToolVersion)
+               + (main.Service.Env.IsSandbox ? " · " + L.T("SandboxMode") : "")
+               + (main.IsElevated ? " · " + L.T("RunningAsAdmin") : "");
+    }
+
     public void Load()
     {
+        Language = Loc.Instance.Language;
         var s = main.Service.Settings;
         DataDir = s.DataDir ?? "";
         HistoryLimit = s.HistoryLimit;
         AutoBackup = s.AutoBackup;
         AutoBackupLimit = s.AutoBackupLimit;
-        var p = main.Service.Paths;
-        Info = $"Data folder in use: {p.DataDir}\nMachine state: {p.StateDir}\n" +
-               $"Version {DeckService.ToolVersion}{(main.Service.Env.IsSandbox ? " · sandbox mode" : "")}" +
-               $"{(main.IsElevated ? " · running as administrator" : "")}";
+        UpdateInfo();
         SaveCommand.NotifyCanExecuteChanged();
     }
 
@@ -466,13 +505,13 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
         s.HistoryLimit = Math.Max(1, HistoryLimit);
         s.AutoBackup = AutoBackup;
         s.AutoBackupLimit = Math.Max(1, AutoBackupLimit);
-        var saved = main.Run(main.Service.SaveSettings, "Settings saved.");
+        var saved = main.Run(main.Service.SaveSettings, L.T("SettingsSaved"));
         SaveCommand.NotifyCanExecuteChanged();
         if (!saved) return;
         if (dirChanged)
         {
             main.ReloadService();
-            main.Status = "Data folder changed. Existing profiles were not moved; use Export/Import or copy the folder.";
+            main.Status = L.T("DataDirChanged");
         }
     }
 
@@ -485,33 +524,31 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
     [RelayCommand]
     void Export()
     {
-        var file = Dialogs.SaveFile("EnvDeck bundle (*.zip)|*.zip", $"envdeck-{Environment.MachineName}-{DateTime.Now:yyyyMMdd}.zip");
+        var file = Dialogs.SaveFile(L.T("ExportFilter"), $"envdeck-{Environment.MachineName}-{DateTime.Now:yyyyMMdd}.zip");
         if (file is null) return;
-        var answer = Dialogs.Ask("Include backups too?",
-            "Useful before reinstalling Windows. Profile history is always included.", "Include backups", "Profiles only");
+        var answer = Dialogs.Ask(L.T("ExportBackupsHeading"), L.T("ExportBackupsBody"), L.T("IncludeBackups"), L.T("ProfilesOnly"));
         if (answer == DialogChoice.Cancel) return;
         var withBackups = answer == DialogChoice.Primary;
         main.Run(() =>
         {
             var manifest = main.Service.Export(file, null, withHistory: true, withBackups);
-            main.Status = $"Exported {manifest.Profiles.Count} profile(s) to {file}.";
+            main.Status = L.T("Exported", manifest.Profiles.Count, file);
         });
     }
 
     [RelayCommand]
     void Import()
     {
-        var file = Dialogs.OpenFile("EnvDeck bundle or profile (*.zip;*.json)|*.zip;*.json");
+        var file = Dialogs.OpenFile(L.T("ImportFilter"));
         if (file is null) return;
         main.Run(() =>
         {
             var result = main.Service.Import(file, overwrite: false);
             if (result.Skipped.Count > 0
-                && Dialogs.Confirm($"{result.Skipped.Count} profile(s) already exist",
-                    $"{string.Join(", ", result.Skipped)}\n\nOverwrite them? Each is saved as a new version, so its history is kept.",
-                    "Overwrite", "Skip them"))
+                && Dialogs.Confirm(L.T("ExistingProfilesHeading", result.Skipped.Count),
+                    L.T("ExistingProfilesBody", string.Join(", ", result.Skipped)), L.T("Overwrite"), L.T("SkipThem")))
                 result = main.Service.Import(file, overwrite: true);
-            main.Status = $"Imported {result.Imported.Count} profile(s) and {result.Backups.Count} backup(s).";
+            main.Status = L.T("Imported", result.Imported.Count, result.Backups.Count);
         });
         main.ReloadAll();
     }
@@ -522,8 +559,9 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
         Issues.Clear();
         main.Run(() =>
         {
-            foreach (var issue in main.Service.Doctor()) Issues.Add(issue);
-            main.Status = Issues.Count == 0 ? "Doctor: everything looks fine." : $"Doctor: {Issues.Count} finding(s).";
+            _issues = main.Service.Doctor();
+            foreach (var issue in _issues) Issues.Add(new IssueRow(issue));
+            main.Status = Issues.Count == 0 ? L.T("DoctorFine") : L.T("DoctorFindings", Issues.Count);
         });
     }
 }

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:EnvDeck.App.ViewModels"
+        xmlns:l="clr-namespace:EnvDeck.App.Localization"
         Title="{Binding Title}" Width="1240" Height="800" MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen">
     <Window.InputBindings>
@@ -77,10 +78,10 @@
         <Border DockPanel.Dock="Bottom" Padding="14,6" BorderThickness="0,1,0,0"
                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="Restart as administrator"
+                <Button DockPanel.Dock="Right" Content="{l:Tr RestartAsAdmin}"
                         Command="{Binding RestartElevatedCommand}"
                         Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}"
-                        ToolTip="Needed only to change Machine (all users) variables" />
+                        ToolTip="{l:Tr RestartAsAdminTip}" />
                 <TextBlock Text="{Binding Status}" ToolTip="{Binding Status}" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
             </DockPanel>
@@ -89,7 +90,7 @@
         <TabControl SelectedIndex="{Binding SelectedTab}" Margin="10,6,10,6">
 
             <!-- ============================================================ PROFILES -->
-            <TabItem Header="Profiles" DataContext="{Binding Profiles}">
+            <TabItem Header="{l:Tr TabProfiles}" DataContext="{Binding Profiles}">
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" MinWidth="220" />
@@ -100,18 +101,18 @@
                     <DockPanel Grid.Column="0">
                         <TextBox DockPanel.Dock="Top" Margin="0,0,0,8"
                                  Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Filter by name, description, group or tag" />
+                                 ToolTip="{l:Tr ProfileFilterTip}" />
                         <Button DockPanel.Dock="Top" Command="{Binding NewCommand}" Margin="0,0,0,8"
                                 HorizontalAlignment="Stretch" Style="{DynamicResource AccentButtonStyle}"
-                                ToolTip="Create a profile (Ctrl+N)">
+                                ToolTip="{l:Tr NewProfileTip}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}"
                                            VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <TextBlock Text="New profile" />
+                                <TextBlock Text="{l:Tr NewProfile}" />
                             </StackPanel>
                         </Button>
                         <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" FontSize="12" Margin="0,8,0,0"
-                                   Text="Right-click a profile to rename, duplicate or delete it." />
+                                   Text="{l:Tr ProfileListHint}" />
                         <ListBox ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                                  HorizontalContentAlignment="Stretch">
                             <ListBox.InputBindings>
@@ -123,18 +124,18 @@
                                  Living on the ListBox, it also opens with the Menu key / Shift+F10. -->
                             <ListBox.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Rename…" InputGestureText="F2" Command="{Binding RenameCommand}">
+                                    <MenuItem Header="{l:Tr MenuRename}" InputGestureText="F2" Command="{Binding RenameCommand}">
                                         <MenuItem.Icon>
                                             <TextBlock Text="&#xE8AC;" FontFamily="{StaticResource IconFont}" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <MenuItem Header="Duplicate…" InputGestureText="Ctrl+D" Command="{Binding DuplicateCommand}">
+                                    <MenuItem Header="{l:Tr MenuDuplicate}" InputGestureText="Ctrl+D" Command="{Binding DuplicateCommand}">
                                         <MenuItem.Icon>
                                             <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource IconFont}" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator />
-                                    <MenuItem Header="Delete…" InputGestureText="Del" Command="{Binding DeleteCommand}"
+                                    <MenuItem Header="{l:Tr MenuDelete}" InputGestureText="Del" Command="{Binding DeleteCommand}"
                                               Foreground="{StaticResource DangerBrush}">
                                         <MenuItem.Icon>
                                             <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}"
@@ -148,7 +149,7 @@
                                     <DockPanel Margin="0,3">
                                         <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
                                                       VerticalAlignment="Center" Margin="8,0,0,0"
-                                                      ToolTip="Turn on / off (writes to the Windows environment)"
+                                                      ToolTip="{l:Tr SwitchTip}"
                                                       AutomationProperties.Name="{Binding Name, StringFormat=Turn {0} on or off}"
                                                       IsChecked="{Binding IsActive, Mode=OneWay}"
                                                       Checked="ProfileSwitch_Toggled" Unchecked="ProfileSwitch_Toggled" />
@@ -168,9 +169,9 @@
 
                     <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding Editor, Converter={StaticResource NotNullToCollapsed}}">
-                        <TextBlock Text="No profile selected" FontSize="18" HorizontalAlignment="Center" />
+                        <TextBlock Text="{l:Tr NoProfileSelected}" FontSize="18" HorizontalAlignment="Center" />
                         <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0" TextAlignment="Center" MaxWidth="420"
-                                   Text="Create one with New, or capture existing variables from the Environment tab." />
+                                   Text="{l:Tr NoProfileHint}" />
                     </StackPanel>
 
                     <Grid Grid.Column="2" Visibility="{Binding Editor, Converter={StaticResource NullToCollapsed}}">
@@ -185,22 +186,22 @@
                         <!-- Header + actions -->
                         <DockPanel Grid.Row="0" Margin="0,0,0,10">
                             <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
-                                <Button Content="Save" Command="{Binding SaveCommand}" Margin="0,0,6,0" MinWidth="80"
+                                <Button Content="{l:Tr Save}" Command="{Binding SaveCommand}" Margin="0,0,6,0" MinWidth="80"
                                         Style="{DynamicResource AccentButtonStyle}"
-                                        ToolTip="Save as a new version" />
-                                <Button Content="Discard" Command="{Binding DiscardCommand}" MinWidth="80"
-                                        ToolTip="Throw away unsaved edits" />
+                                        ToolTip="{l:Tr SaveTip}" />
+                                <Button Content="{l:Tr Discard}" Command="{Binding DiscardCommand}" MinWidth="80"
+                                        ToolTip="{l:Tr DiscardTip}" />
                             </WrapPanel>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Editor.Name}" FontSize="22" FontWeight="SemiBold" />
                                 <Border Margin="10,0,0,0" Padding="8,2" CornerRadius="4" VerticalAlignment="Center"
                                         Background="#2E9E4F"
                                         Visibility="{Binding Selected.IsActive, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="ON" Foreground="White" FontWeight="Bold" FontSize="11" />
+                                    <TextBlock Text="{l:Tr OnBadge}" Foreground="White" FontWeight="Bold" FontSize="11" />
                                 </Border>
                                 <TextBlock Text="{Binding Editor.Header}" Margin="10,0,0,0" VerticalAlignment="Center"
                                            Opacity="0.7" />
-                                <TextBlock Text="● unsaved" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#D98A00"
+                                <TextBlock Text="{l:Tr Unsaved}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#D98A00"
                                            Visibility="{Binding Editor.IsDirty, Converter={StaticResource BoolToVis}}" />
                             </StackPanel>
                         </DockPanel>
@@ -215,28 +216,28 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Description" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="{l:Tr Description}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBox Grid.Column="1" Text="{Binding Editor.Description, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Grid.Column="2" Text="Group" VerticalAlignment="Center" Margin="14,0,8,0"
-                                       ToolTip="Profiles in the same group replace each other when turned on (e.g. java)" />
+                            <TextBlock Grid.Column="2" Text="{l:Tr Group}" VerticalAlignment="Center" Margin="14,0,8,0"
+                                       ToolTip="{l:Tr GroupTip}" />
                             <TextBox Grid.Column="3" Text="{Binding Editor.Group, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Profiles in the same group replace each other when turned on (e.g. java)" />
-                            <TextBlock Grid.Column="4" Text="Tags" VerticalAlignment="Center" Margin="14,0,8,0" />
+                                     ToolTip="{l:Tr GroupTip}" />
+                            <TextBlock Grid.Column="4" Text="{l:Tr Tags}" VerticalAlignment="Center" Margin="14,0,8,0" />
                             <TextBox Grid.Column="5" Text="{Binding Editor.Tags, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Comma separated" />
+                                     ToolTip="{l:Tr TagsTip}" />
                         </Grid>
 
                         <!-- Variable toolbar -->
                         <DockPanel Grid.Row="2" Margin="0,0,0,6">
                             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                                <Button Content="Add variable" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
-                                <Button Content="From environment…" Command="{Binding AddFromEnvironmentCommand}" Margin="0,0,6,0"
-                                        ToolTip="Pick variables, or single Path entries, from the current environment" />
-                                <Button Content="Remove" Command="{Binding RemoveVariableCommand}" />
+                                <Button Content="{l:Tr AddVariable}" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
+                                <Button Content="{l:Tr FromEnvironment}" Command="{Binding AddFromEnvironmentCommand}" Margin="0,0,6,0"
+                                        ToolTip="{l:Tr FromEnvironmentTip}" />
+                                <Button Content="{l:Tr RemoveVariable}" Command="{Binding RemoveVariableCommand}" />
                             </StackPanel>
                             <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="12,0,0,0"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                       Text="Prepend/Append add ';'-separated entries to Path-like variables · %VAR% references are kept · Machine scope needs admin" />
+                                       Text="{l:Tr VariablesHint}" ToolTip="{l:Tr VariablesHint}" />
                         </DockPanel>
 
                         <!-- Rows are reordered by dragging the grip in the first column (or Alt+Up / Alt+Down). -->
@@ -250,7 +251,7 @@
                                 <DataGridTemplateColumn Width="34" CanUserResize="False">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border Background="Transparent" Cursor="SizeNS" ToolTip="Drag to reorder (Alt+↑ / Alt+↓)"
+                                            <Border Background="Transparent" Cursor="SizeNS" ToolTip="{l:Tr DragToReorder}"
                                                     PreviewMouseLeftButtonDown="Grip_PreviewMouseLeftButtonDown"
                                                     PreviewMouseMove="Grip_PreviewMouseMove">
                                                 <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55"
@@ -259,61 +260,61 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridComboBoxColumn Header="Scope" Width="100"
+                                <DataGridComboBoxColumn Header="{l:Tr ColScope}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Scopes}"
                                                         SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn Header="Op" Width="100"
+                                <DataGridComboBoxColumn Header="{l:Tr ColOp}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Ops}"
                                                         SelectedItemBinding="{Binding Op, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="Name" Width="190"
+                                <DataGridTextColumn Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="Value" Width="*"
+                                <DataGridTextColumn Header="{l:Tr ColValue}" Width="*"
                                                     Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn Header="Kind" Width="120"
+                                <DataGridComboBoxColumn Header="{l:Tr ColKind}" Width="120"
                                                         ItemsSource="{x:Static vm:Options.Kinds}"
                                                         SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="Note" Width="150"
+                                <DataGridTextColumn Header="{l:Tr ColNote}" Width="150"
                                                     Binding="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
                             </DataGrid.Columns>
                         </DataGrid>
 
                         <!-- Preview / history: collapsed by default so the variables get the room -->
-                        <Expander Grid.Row="4" Header="Preview &amp; history" IsExpanded="False" Margin="0,10,0,0"
+                        <Expander Grid.Row="4" Header="{l:Tr PreviewAndHistory}" IsExpanded="False" Margin="0,10,0,0"
                                   HorizontalAlignment="Stretch">
                             <TabControl Height="230" Margin="0,6,0,0">
-                                <TabItem Header="Preview">
+                                <TabItem Header="{l:Tr TabPreview}">
                                     <DockPanel Margin="0,6,0,0">
                                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                                            <Button DockPanel.Dock="Left" Content="Preview changes"
+                                            <Button DockPanel.Dock="Left" Content="{l:Tr PreviewChanges}"
                                                     Command="{Binding PreviewChangesCommand}"
-                                                    ToolTip="What turning this profile on would change (unsaved edits included)" />
+                                                    ToolTip="{l:Tr PreviewChangesTip}" />
                                             <TextBlock Text="{Binding PreviewSummary}" VerticalAlignment="Center" Margin="10,0,0,0" />
                                         </DockPanel>
                                         <DataGrid ItemsSource="{Binding Preview}" AutoGenerateColumns="False" IsReadOnly="True"
                                                   HeadersVisibility="Column">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="90" />
-                                                <DataGridTextColumn Header="Variable" Binding="{Binding Variable}" Width="200" />
-                                                <DataGridTextColumn Header="Before" Binding="{Binding Before}" Width="*" />
-                                                <DataGridTextColumn Header="After" Binding="{Binding After}" Width="*" />
+                                                <DataGridTextColumn Header="{l:Tr ColAction}" Binding="{Binding Action}" Width="100" />
+                                                <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
+                                                <DataGridTextColumn Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
+                                                <DataGridTextColumn Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </DockPanel>
                                 </TabItem>
-                                <TabItem Header="History">
+                                <TabItem Header="{l:Tr TabHistory}">
                                     <DockPanel Margin="0,6,0,0">
                                         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
-                                            <Button Content="Compare with current" Command="{Binding CompareVersionCommand}"
+                                            <Button Content="{l:Tr CompareWithCurrent}" Command="{Binding CompareVersionCommand}"
                                                     Margin="0,0,6,0" />
-                                            <Button Content="Roll back to this version" Command="{Binding RollbackCommand}" />
+                                            <Button Content="{l:Tr RollBackToVersion}" Command="{Binding RollbackCommand}" />
                                         </StackPanel>
                                         <DataGrid ItemsSource="{Binding History}" SelectedItem="{Binding SelectedVersion}"
                                                   AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Version" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
-                                                <DataGridTextColumn Header="Saved" Width="200"
+                                                <DataGridTextColumn Header="{l:Tr ColVersion}" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
+                                                <DataGridTextColumn Header="{l:Tr ColSaved}" Width="200"
                                                                     Binding="{Binding SavedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" />
-                                                <DataGridTextColumn Header="Variables" Binding="{Binding VariableCount}" Width="*" />
+                                                <DataGridTextColumn Header="{l:Tr ColVariables}" Binding="{Binding VariableCount}" Width="*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </DockPanel>
@@ -325,7 +326,7 @@
             </TabItem>
 
             <!-- ============================================================ ENVIRONMENT -->
-            <TabItem Header="Environment" DataContext="{Binding CurrentEnv}">
+            <TabItem Header="{l:Tr TabEnvironment}" DataContext="{Binding CurrentEnv}">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -335,28 +336,28 @@
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="Capture selected → profile" Command="{Binding CaptureCommand}"
+                            <Button Content="{l:Tr CaptureSelected}" Command="{Binding CaptureCommand}"
                                     CommandParameter="{Binding SelectedItems, ElementName=EnvGrid}"
                                     Style="{DynamicResource AccentButtonStyle}" Margin="8,0,0,0" />
-                            <Button Content="Copy value" Command="{Binding CopyValueCommand}" Margin="6,0,0,0" />
-                            <Button Content="Backup now" Command="{Binding BackupCommand}" Margin="6,0,0,0" />
-                            <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="6,0,0,0" />
+                            <Button Content="{l:Tr CopyValue}" Command="{Binding CopyValueCommand}" Margin="6,0,0,0" />
+                            <Button Content="{l:Tr BackupNow}" Command="{Binding BackupCommand}" Margin="6,0,0,0" />
+                            <Button Content="{l:Tr Refresh}" Command="{Binding RefreshCommand}" Margin="6,0,0,0" />
                         </StackPanel>
                         <ComboBox DockPanel.Dock="Left" Width="120" Margin="0,0,8,0"
-                                  ItemsSource="{x:Static vm:Options.ScopeFilters}" SelectedItem="{Binding ScopeFilter}" />
-                        <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="Filter by name or value" />
+                                  ItemsSource="{x:Static vm:Options.ScopeFilters}" DisplayMemberPath="Label"
+                                  SelectedValuePath="Value" SelectedValue="{Binding ScopeFilter}" />
+                        <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr EnvFilterTip}" />
                     </DockPanel>
                     <DataGrid x:Name="EnvGrid" Grid.Row="1" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Scope" Binding="{Binding Scope}" Width="90" />
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="240" />
-                            <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
-                            <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="110" />
+                            <DataGridTextColumn Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="90" />
+                            <DataGridTextColumn Header="{l:Tr ColName}" Binding="{Binding Name}" Width="240" />
+                            <DataGridTextColumn Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColKind}" Binding="{Binding Kind}" Width="110" />
                         </DataGrid.Columns>
                     </DataGrid>
-                    <TextBlock Grid.Row="2" Style="{StaticResource Hint}" Margin="0,10,0,4"
-                               Text="Entries of the selected list variable (orange = folder not found). Note: Windows puts the Machine Path before the User Path." />
+                    <TextBlock Grid.Row="2" Style="{StaticResource Hint}" Margin="0,10,0,4" Text="{l:Tr EntriesHint}" />
                     <ListBox Grid.Row="3" ItemsSource="{Binding Entries}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -378,40 +379,39 @@
             </TabItem>
 
             <!-- ============================================================ BACKUPS -->
-            <TabItem Header="Backups" DataContext="{Binding Backups}">
+            <TabItem Header="{l:Tr TabBackups}" DataContext="{Binding Backups}">
                 <DockPanel Margin="0,10,0,0">
                     <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                        <Button Content="Backup now" Command="{Binding CreateCommand}"
+                        <Button Content="{l:Tr BackupNow}" Command="{Binding CreateCommand}"
                                 Style="{DynamicResource AccentButtonStyle}" Margin="0,0,6,6" />
-                        <Button Content="Restore selected" Command="{Binding RestoreCommand}" Margin="0,0,10,6" />
-                        <CheckBox Content="User" IsChecked="{Binding RestoreUser}" Margin="0,0,6,6" />
-                        <CheckBox Content="Machine" IsChecked="{Binding RestoreMachine}" Margin="0,0,6,6" />
-                        <CheckBox Content="Delete variables not in the backup" IsChecked="{Binding Prune}" Margin="0,0,16,6" />
-                        <Button Content="Compare with current" Command="{Binding CompareWithCurrentCommand}" Margin="0,0,6,6" />
-                        <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="0,0,6,6" />
-                        <Button Content="Open folder" Command="{Binding OpenFolderCommand}" Margin="0,0,6,6" />
-                        <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="0,0,6,6" />
+                        <Button Content="{l:Tr RestoreSelected}" Command="{Binding RestoreCommand}" Margin="0,0,10,6" />
+                        <CheckBox Content="{l:Tr ScopeUser}" IsChecked="{Binding RestoreUser}" Margin="0,0,6,6" />
+                        <CheckBox Content="{l:Tr ScopeMachine}" IsChecked="{Binding RestoreMachine}" Margin="0,0,6,6" />
+                        <CheckBox Content="{l:Tr PruneVariables}" IsChecked="{Binding Prune}" Margin="0,0,16,6" />
+                        <Button Content="{l:Tr CompareWithCurrent}" Command="{Binding CompareWithCurrentCommand}" Margin="0,0,6,6" />
+                        <Button Content="{l:Tr Delete}" Command="{Binding DeleteCommand}" Margin="0,0,6,6" />
+                        <Button Content="{l:Tr OpenFolder}" Command="{Binding OpenFolderCommand}" Margin="0,0,6,6" />
+                        <Button Content="{l:Tr Refresh}" Command="{Binding RefreshCommand}" Margin="0,0,6,6" />
                     </WrapPanel>
-                    <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="0,8,0,0"
-                               Text="A backup is taken automatically before every turn on/off and restore (only the most recent automatic ones are kept). Manual backups stay until you delete them. Before reinstalling Windows: Settings → Export bundle (with backups)." />
+                    <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Margin="0,8,0,0" Text="{l:Tr BackupsHint}" />
                     <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="150" />
-                            <DataGridTextColumn Header="Created" Binding="{Binding Created}" Width="150" />
-                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="70" />
-                            <DataGridTextColumn Header="Note / reason" Binding="{Binding Description}" Width="*" />
-                            <DataGridTextColumn Header="User" Binding="{Binding UserCount}" Width="60" />
-                            <DataGridTextColumn Header="Machine" Binding="{Binding MachineCount}" Width="80" />
-                            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="140" />
-                            <DataGridTextColumn Header="Profiles on" Binding="{Binding ActiveProfiles}" Width="160" />
+                            <DataGridTextColumn Header="{l:Tr ColId}" Binding="{Binding Id}" Width="150" />
+                            <DataGridTextColumn Header="{l:Tr ColCreated}" Binding="{Binding Created}" Width="150" />
+                            <DataGridTextColumn Header="{l:Tr ColType}" Binding="{Binding Type}" Width="80" />
+                            <DataGridTextColumn Header="{l:Tr ColNoteReason}" Binding="{Binding Description}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColUser}" Binding="{Binding UserCount}" Width="60" />
+                            <DataGridTextColumn Header="{l:Tr ColMachine}" Binding="{Binding MachineCount}" Width="80" />
+                            <DataGridTextColumn Header="{l:Tr ColHost}" Binding="{Binding Host}" Width="140" />
+                            <DataGridTextColumn Header="{l:Tr ColProfilesOn}" Binding="{Binding ActiveProfiles}" Width="160" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
             </TabItem>
 
             <!-- ============================================================ COMPARE -->
-            <TabItem Header="Compare" DataContext="{Binding Compare}">
+            <TabItem Header="{l:Tr TabCompare}" DataContext="{Binding Compare}">
                 <DockPanel Margin="0,10,0,0">
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
@@ -422,12 +422,12 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ComboBox IsEditable="True" ItemsSource="{Binding Sources}"
-                                  Text="{Binding Left, UpdateSourceTrigger=PropertyChanged}" ToolTip="Left (old)" />
-                        <Button Grid.Column="1" Content="⇄" Command="{Binding SwapCommand}" Margin="6,0" ToolTip="Swap" />
+                                  Text="{Binding Left, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr LeftTip}" />
+                        <Button Grid.Column="1" Content="⇄" Command="{Binding SwapCommand}" Margin="6,0" ToolTip="{l:Tr Swap}" />
                         <ComboBox Grid.Column="2" IsEditable="True" ItemsSource="{Binding Sources}"
-                                  Text="{Binding Right, UpdateSourceTrigger=PropertyChanged}" ToolTip="Right (new)" />
-                        <CheckBox Grid.Column="3" Content="Show unchanged" IsChecked="{Binding ShowSame}" Margin="12,0,6,0" />
-                        <Button Grid.Column="4" Content="Compare" Command="{Binding RunCommand}"
+                                  Text="{Binding Right, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr RightTip}" />
+                        <CheckBox Grid.Column="3" Content="{l:Tr ShowUnchanged}" IsChecked="{Binding ShowSame}" Margin="12,0,6,0" />
+                        <Button Grid.Column="4" Content="{l:Tr Compare}" Command="{Binding RunCommand}"
                                 Style="{DynamicResource AccentButtonStyle}" MinWidth="96" />
                     </Grid>
                     <TextBlock DockPanel.Dock="Top" Text="{Binding Summary}" Style="{StaticResource Hint}" Margin="0,0,0,8" />
@@ -440,93 +440,93 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Variable" Binding="{Binding Variable}" Width="220" />
-                            <DataGridTextColumn Header="Left" Binding="{Binding Left}" Width="*" />
-                            <DataGridTextColumn Header="Right" Binding="{Binding Right}" Width="*" />
-                            <DataGridTextColumn Header="List entries" Binding="{Binding Details}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="220" />
+                            <DataGridTextColumn Header="{l:Tr ColLeft}" Binding="{Binding Left}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColRight}" Binding="{Binding Right}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColListEntries}" Binding="{Binding Details}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
             </TabItem>
 
             <!-- ============================================================ SEARCH -->
-            <TabItem Header="Search" DataContext="{Binding Search}">
+            <TabItem Header="{l:Tr TabSearch}" DataContext="{Binding Search}">
                 <DockPanel Margin="0,10,0,0">
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Content="Search" Command="{Binding RunCommand}"
+                        <Button DockPanel.Dock="Right" Content="{l:Tr Search}" Command="{Binding RunCommand}"
                                 Style="{DynamicResource AccentButtonStyle}" MinWidth="96" Margin="8,0,0,0" />
-                        <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Text (or regular expression) to find in variable names and values">
+                        <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr SearchTip}">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Enter" Command="{Binding RunCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
                     </DockPanel>
                     <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                        <CheckBox Content="Names" IsChecked="{Binding InNames}" Margin="0,0,6,0" />
-                        <CheckBox Content="Values" IsChecked="{Binding InValues}" Margin="0,0,6,0" />
-                        <CheckBox Content="Regex" IsChecked="{Binding UseRegex}" Margin="0,0,24,0" />
-                        <CheckBox Content="Profiles" IsChecked="{Binding InProfiles}" Margin="0,0,6,0" />
-                        <CheckBox Content="Environment" IsChecked="{Binding InEnvironment}" Margin="0,0,6,0" />
-                        <CheckBox Content="Backups" IsChecked="{Binding InBackups}" />
+                        <CheckBox Content="{l:Tr InNames}" IsChecked="{Binding InNames}" Margin="0,0,6,0" />
+                        <CheckBox Content="{l:Tr InValues}" IsChecked="{Binding InValues}" Margin="0,0,6,0" />
+                        <CheckBox Content="{l:Tr Regex}" IsChecked="{Binding UseRegex}" Margin="0,0,24,0" />
+                        <CheckBox Content="{l:Tr InProfiles}" IsChecked="{Binding InProfiles}" Margin="0,0,6,0" />
+                        <CheckBox Content="{l:Tr InEnvironment}" IsChecked="{Binding InEnvironment}" Margin="0,0,6,0" />
+                        <CheckBox Content="{l:Tr InBackups}" IsChecked="{Binding InBackups}" />
                     </WrapPanel>
-                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}" Margin="0,0,0,8"
-                               Text="{Binding Summary, StringFormat={}{0}  ·  double-click a row to open it}" />
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}" Margin="0,0,0,8" Text="{Binding Summary}" />
                     <DataGrid x:Name="SearchGrid" ItemsSource="{Binding Results}" AutoGenerateColumns="False"
                               IsReadOnly="True" HeadersVisibility="Column" MouseDoubleClick="SearchGrid_MouseDoubleClick">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="200" />
-                            <DataGridTextColumn Header="Variable" Binding="{Binding Variable}" Width="240" />
-                            <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
+                            <DataGridTextColumn Header="{l:Tr ColSource}" Binding="{Binding Source}" Width="200" />
+                            <DataGridTextColumn Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="240" />
+                            <DataGridTextColumn Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
             </TabItem>
 
             <!-- ============================================================ SETTINGS -->
-            <TabItem Header="Settings &amp; tools" DataContext="{Binding Settings}">
+            <TabItem Header="{l:Tr TabSettings}" DataContext="{Binding Settings}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0,0,16,16" MaxWidth="900" HorizontalAlignment="Left">
-                        <TextBlock Text="Data folder" Style="{StaticResource Heading}" />
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
-                                   Text="Profiles, version history and backups. Point it at OneDrive or a git repository to keep them in sync between machines. Empty = %USERPROFILE%\.envdeck" />
+                        <TextBlock Text="{l:Tr Language}" Style="{StaticResource Heading}" />
+                        <ComboBox HorizontalAlignment="Left" MinWidth="200"
+                                  ItemsSource="{x:Static l:Loc.Languages}" DisplayMemberPath="Name"
+                                  SelectedValuePath="Code" SelectedValue="{Binding Language}" />
+
+                        <TextBlock Text="{l:Tr DataFolder}" Style="{StaticResource Heading}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6" Text="{l:Tr DataFolderHint}" />
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseCommand}" Margin="6,0,0,0" />
+                            <Button DockPanel.Dock="Right" Content="{l:Tr Browse}" Command="{Binding BrowseCommand}" Margin="6,0,0,0" />
                             <TextBox Text="{Binding DataDir, UpdateSourceTrigger=PropertyChanged}" />
                         </DockPanel>
 
                         <WrapPanel Margin="0,14,0,0">
-                            <TextBlock Text="Versions kept per profile" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="{l:Tr VersionsKept}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBox Text="{Binding HistoryLimit, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="0,0,24,0" />
-                            <CheckBox Content="Automatic backup before changes, keep" IsChecked="{Binding AutoBackup}" Margin="0,0,8,0" />
+                            <CheckBox Content="{l:Tr AutoBackupKeep}" IsChecked="{Binding AutoBackup}" Margin="0,0,8,0" />
                             <TextBox Text="{Binding AutoBackupLimit, UpdateSourceTrigger=PropertyChanged}" Width="80" />
                         </WrapPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                            <Button Content="Save settings" Command="{Binding SaveCommand}"
+                            <Button Content="{l:Tr SaveSettings}" Command="{Binding SaveCommand}"
                                     Style="{DynamicResource AccentButtonStyle}" Margin="0,0,6,0" />
-                            <Button Content="Open data folder"
+                            <Button Content="{l:Tr OpenDataFolder}"
                                     Command="{Binding DataContext.OpenDataFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                         </StackPanel>
                         <TextBlock Text="{Binding Info}" Style="{StaticResource Hint}" Margin="0,10,0,0" />
 
-                        <TextBlock Text="Move to another machine / reinstall Windows" Style="{StaticResource Heading}" />
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
-                                   Text="Export bundles every profile with its full history (and optionally backups) into one .zip. On the new machine: install EnvDeck, Import, then turn the profiles you need on. Use 'Capture → portable' so paths such as C:\Users\you become %USERPROFILE%." />
+                        <TextBlock Text="{l:Tr MoveMachine}" Style="{StaticResource Heading}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6" Text="{l:Tr MoveMachineHint}" />
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="Export bundle…" Command="{Binding ExportCommand}" Margin="0,0,6,0" />
-                            <Button Content="Import bundle or profile…" Command="{Binding ImportCommand}" />
+                            <Button Content="{l:Tr ExportBundle}" Command="{Binding ExportCommand}" Margin="0,0,6,0" />
+                            <Button Content="{l:Tr ImportBundle}" Command="{Binding ImportCommand}" />
                         </StackPanel>
 
-                        <TextBlock Text="Doctor" Style="{StaticResource Heading}" />
-                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
-                                   Text="Checks Path for missing and duplicate folders, profiles for errors, and profiles that are on but were changed outside EnvDeck." />
-                        <Button Content="Run doctor" Command="{Binding RunDoctorCommand}" HorizontalAlignment="Left" />
+                        <TextBlock Text="{l:Tr Doctor}" Style="{StaticResource Heading}" />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6" Text="{l:Tr DoctorHint}" />
+                        <Button Content="{l:Tr RunDoctor}" Command="{Binding RunDoctorCommand}" HorizontalAlignment="Left" />
                         <ItemsControl ItemsSource="{Binding Issues}" Margin="0,8,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Severity}" Width="70" FontWeight="SemiBold" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Severity}" Width="80" FontWeight="SemiBold" />
                                         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
                                     </DockPanel>
                                 </DataTemplate>

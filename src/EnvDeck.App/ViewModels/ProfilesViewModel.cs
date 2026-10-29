@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnvDeck.App.Localization;
 using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
@@ -70,8 +71,7 @@ public partial class ProfilesViewModel : ObservableObject
     {
         if (_reloading) return;
         if (Editor is { IsDirty: true } && !SameName(Editor.Name, newValue?.Name)
-            && Dialogs.Confirm($"Save changes to '{Editor.Name}'?",
-                "You are switching to another profile; unsaved edits are lost otherwise.", "Save", "Don't save"))
+            && Dialogs.Confirm(L.T("SaveChangesHeading", Editor.Name), L.T("SaveBeforeSwitchBody"), L.T("Save"), L.T("DontSave")))
             SaveEditor(askToReapply: false);
         LoadEditor();
     }
@@ -92,7 +92,7 @@ public partial class ProfilesViewModel : ObservableObject
             _reloading = false;
         }
 
-        if (Service.Profiles.LoadErrors.Count > 0) _main.Status = "Could not read: " + string.Join("; ", Service.Profiles.LoadErrors);
+        if (Service.Profiles.LoadErrors.Count > 0) _main.Status = L.T("CouldNotRead", string.Join("; ", Service.Profiles.LoadErrors));
         // Keep unsaved edits of the selected profile across a refresh.
         if (select is not null || Editor is not { IsDirty: true } || !SameName(Editor.Name, Selected?.Name)) LoadEditor();
     }
@@ -130,10 +130,10 @@ public partial class ProfilesViewModel : ObservableObject
             var (profile, changed) = Service.Profiles.Save(editor.ToProfile());
             editor.MarkSaved(profile.Version);
             Items.FirstOrDefault(i => SameName(i.Name, profile.Name))?.Update(profile);
-            _main.Status = changed ? $"Saved '{profile.Name}' as v{profile.Version}." : "No changes to save.";
+            _main.Status = changed ? L.T("SavedAsVersion", profile.Name, profile.Version) : L.T("NoChangesToSave");
             if (changed && askToReapply && Service.IsActive(profile.Name)
-                && Dialogs.Confirm($"Apply v{profile.Version} of '{profile.Name}' now?",
-                    "The profile is on, and the environment still has the previous version.", "Apply now", "Later"))
+                && Dialogs.Confirm(L.T("ApplyNowHeading", profile.Version, profile.Name), L.T("ApplyNowBody"),
+                    L.T("ApplyNow"), L.T("Later")))
                 Service.Apply(profile.Name);
         });
         if (saved && ReferenceEquals(editor, Editor))
@@ -148,13 +148,13 @@ public partial class ProfilesViewModel : ObservableObject
     [RelayCommand]
     void New()
     {
-        var name = Dialogs.Prompt("New profile", "Profile name (letters, digits, . _ -):");
+        var name = Dialogs.Prompt(L.T("NewProfile"), L.T("NewProfileLabel"));
         if (name is null) return;
         if (_main.Run(() =>
             {
-                if (Service.Profiles.Exists(name)) throw new DeckException($"Profile '{name}' already exists.");
+                if (Service.Profiles.Exists(name)) throw new DeckException(L.T("ProfileExists", name));
                 Service.Profiles.Save(new Profile { Name = name });
-            }, $"Created '{name}'."))
+            }, L.T("CreatedProfile", name)))
             Reload(name);
     }
 
@@ -166,18 +166,18 @@ public partial class ProfilesViewModel : ObservableObject
     void Duplicate(ProfileItemViewModel? item)
     {
         item ??= Selected;
-        if (item is null || !SaveIfEditing(item.Name, "duplicating")) return;
+        if (item is null || !SaveIfEditing(item.Name, "ActionDuplicating")) return;
         var source = item.Name;
-        var name = Dialogs.Prompt("Duplicate profile", $"New name for the copy of '{source}':", source + "-copy");
+        var name = Dialogs.Prompt(L.T("DuplicateTitle"), L.T("DuplicateLabel", source), source + "-copy");
         if (name is null) return;
         if (_main.Run(() =>
             {
-                if (Service.Profiles.Exists(name)) throw new DeckException($"Profile '{name}' already exists.");
+                if (Service.Profiles.Exists(name)) throw new DeckException(L.T("ProfileExists", name));
                 var copy = Service.Profiles.Get(source).Clone();
                 copy.Name = name;
                 copy.Version = 0;
                 Service.Profiles.Save(copy);
-            }, $"Created '{name}' from '{source}'."))
+            }, L.T("CreatedFrom", name, source)))
             Reload(name);
     }
 
@@ -185,11 +185,11 @@ public partial class ProfilesViewModel : ObservableObject
     void Rename(ProfileItemViewModel? item)
     {
         item ??= Selected;
-        if (item is null || !SaveIfEditing(item.Name, "renaming")) return;
+        if (item is null || !SaveIfEditing(item.Name, "ActionRenaming")) return;
         var old = item.Name;
-        var name = Dialogs.Prompt("Rename profile", $"New name for '{old}':", old);
+        var name = Dialogs.Prompt(L.T("RenameTitle"), L.T("RenameLabel", old), old);
         if (name is null || name == old) return;
-        if (_main.Run(() => Service.RenameProfile(old, name), $"Renamed '{old}' to '{name}'.")) Reload(name);
+        if (_main.Run(() => Service.RenameProfile(old, name), L.T("Renamed", old, name))) Reload(name);
     }
 
     [RelayCommand(CanExecute = nameof(HasTarget))]
@@ -199,15 +199,14 @@ public partial class ProfilesViewModel : ObservableObject
         if (item is null) return;
         var name = item.Name;
         var active = Service.IsActive(name);
-        var details = (active ? "It is on: it will be turned off first, undoing its changes to the environment.\n\n" : "")
-                      + "Its version history is kept, so a profile with the same name can be rolled back to it.";
-        if (!Dialogs.ConfirmDanger($"Delete profile '{name}'?", details, "Delete")) return;
+        var details = (active ? L.T("DeleteProfileOnNote") + "\n\n" : "") + L.T("DeleteProfileHistoryNote");
+        if (!Dialogs.ConfirmDanger(L.T("DeleteProfileHeading", name), details, L.T("Delete"))) return;
 
         if (_main.Run(() =>
             {
                 if (active) Service.Unapply(name);
                 Service.DeleteProfile(name, purgeHistory: false);
-            }, $"Deleted '{name}'{(active ? " (turned off first)" : "")}."))
+            }, L.T(active ? "DeletedProfileTurnedOff" : "DeletedProfile", name)))
         {
             Reload();
             if (active) _main.CurrentEnv.Refresh();
@@ -218,7 +217,7 @@ public partial class ProfilesViewModel : ObservableObject
     bool SaveIfEditing(string name, string action)
     {
         if (Editor is not { IsDirty: true } || !SameName(Editor.Name, name)) return true;
-        return Dialogs.Confirm($"Save changes to '{name}'?", $"They have to be saved before {action}.", "Save")
+        return Dialogs.Confirm(L.T("SaveChangesHeading", name), L.T("SaveFirstBody", L.T(action)), L.T("Save"))
                && SaveEditor(askToReapply: false);
     }
 
@@ -229,7 +228,7 @@ public partial class ProfilesViewModel : ObservableObject
         if (item is null) return;
         try
         {
-            if (!SaveIfEditing(item.Name, "turning it on or off")) return;
+            if (!SaveIfEditing(item.Name, "ActionToggling")) return;
 
             var name = item.Name;
             var turningOn = !Service.IsActive(name);
@@ -237,10 +236,10 @@ public partial class ProfilesViewModel : ObservableObject
             {
                 var result = turningOn ? Service.Apply(name) : Service.Unapply(name);
                 var extra = result.TurnedOff.Where(o => !SameName(o, name)).ToList();
-                _main.Status = $"{(turningOn ? "Turned on" : "Turned off")} '{name}': {result.Changes.Count} variable(s) changed"
-                               + (extra.Count > 0 ? $"; turned off {string.Join(", ", extra)} (same group)" : "")
+                _main.Status = L.T(turningOn ? "TurnedOnStatus" : "TurnedOffStatus", name, result.Changes.Count)
+                               + (extra.Count > 0 ? L.T("AlsoTurnedOff", string.Join(", ", extra)) : "")
                                + (result.Warnings.Count > 0 ? $". {string.Join(" ", result.Warnings)}" : ".")
-                               + " New terminals see the change.";
+                               + " " + L.T("NewTerminalsSee");
             });
             _main.CurrentEnv.Refresh();
             _main.Backups.Refresh();
@@ -262,7 +261,7 @@ public partial class ProfilesViewModel : ObservableObject
     void Discard()
     {
         if (Editor is { IsDirty: true } editor
-            && !Dialogs.ConfirmDanger("Discard unsaved changes?", $"Your edits to '{editor.Name}' will be lost.", "Discard"))
+            && !Dialogs.ConfirmDanger(L.T("DiscardHeading"), L.T("DiscardBody", editor.Name), L.T("Discard")))
             return;
         LoadEditor();
     }
@@ -280,8 +279,8 @@ public partial class ProfilesViewModel : ObservableObject
             var changes = Service.Plan(profile);
             foreach (var c in changes.Where(c => !c.IsNoOp)) Preview.Add(new ChangeRow(c));
             PreviewSummary = Preview.Count == 0
-                ? "Turning this profile on would change nothing."
-                : $"Turning this profile on would change {Preview.Count} variable(s):";
+                ? L.T("PreviewNothing")
+                : L.T("PreviewCount", Preview.Count);
         });
     }
 
@@ -307,7 +306,7 @@ public partial class ProfilesViewModel : ObservableObject
         VariableViewModel? last = null;
         foreach (var v in window.Result) last = editor.Merge(v);
         SelectedVariable = last;
-        _main.Status = $"Added {window.Result.Count} variable(s) from the current environment to '{editor.Name}'. Review, then Save.";
+        _main.Status = L.T("AddedFromEnv", window.Result.Count, editor.Name);
     }
 
     [RelayCommand]
@@ -340,13 +339,12 @@ public partial class ProfilesViewModel : ObservableObject
         if (Editor is null || SelectedVersion is null) return;
         var name = Editor.Name;
         var version = SelectedVersion.Version;
-        if (!Dialogs.Confirm($"Roll '{name}' back to v{version}?",
-                "It is saved as a new version, so nothing in the history is lost.", "Roll back"))
+        if (!Dialogs.Confirm(L.T("RollbackHeading", name, version), L.T("RollbackBody"), L.T("RollBack")))
             return;
         if (_main.Run(() =>
             {
                 var (profile, changed) = Service.Profiles.Rollback(name, version);
-                _main.Status = changed ? $"'{name}' restored from v{version} as v{profile.Version}." : $"'{name}' already matches v{version}.";
+                _main.Status = changed ? L.T("RolledBack", name, version, profile.Version) : L.T("AlreadyMatchesVersion", name, version);
             }))
             Reload(name);
     }
@@ -393,8 +391,8 @@ public partial class ProfileItemViewModel : ObservableObject
 
     public void Update(Profile profile)
     {
-        var parts = new List<string> { $"v{profile.Version}", $"{profile.Variables.Count} var" };
-        if (!string.IsNullOrEmpty(profile.Group)) parts.Add($"group: {profile.Group}");
+        var parts = new List<string> { $"v{profile.Version}", L.T("ItemVars", profile.Variables.Count) };
+        if (!string.IsNullOrEmpty(profile.Group)) parts.Add(L.T("ItemGroup", profile.Group));
         if (!string.IsNullOrEmpty(profile.Description)) parts.Add(profile.Description);
         Subtitle = string.Join(" · ", parts);
         _searchText = string.Join(" ", [profile.Name, profile.Description, profile.Group, .. profile.Tags ?? []]);
@@ -431,7 +429,7 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     public DateTimeOffset? UpdatedAt { get; }
 
-    public string Header => $"v{Version}" + (UpdatedAt is { } at ? $" · saved {at.LocalDateTime:yyyy-MM-dd HH:mm}" : "");
+    public string Header => $"v{Version}" + (UpdatedAt is { } at ? " · " + L.T("EditorSavedAt", at.LocalDateTime.ToString("yyyy-MM-dd HH:mm")) : "");
 
     public ObservableCollection<VariableViewModel> Variables { get; } = [];
 
@@ -552,11 +550,11 @@ public partial class VariableViewModel : ObservableObject
 
 public sealed class ChangeRow(PlannedChange change)
 {
-    public string Action { get; } = change.Action.ToString();
+    public string Action { get; } = L.T("Change" + change.Action);
 
     public string Variable { get; } = $"{change.Scope}\\{change.Name}";
 
-    public string Before { get; } = change.Before ?? "(not set)";
+    public string Before { get; } = change.Before ?? L.T("ValueNotSet");
 
-    public string After { get; } = change.After ?? "(deleted)";
+    public string After { get; } = change.After ?? L.T("ValueDeleted");
 }

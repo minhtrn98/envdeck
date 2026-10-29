@@ -1,4 +1,5 @@
 using System.Windows;
+using EnvDeck.App.Localization;
 using Microsoft.Win32;
 
 namespace EnvDeck.App;
@@ -11,20 +12,21 @@ static class Dialogs
         Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive && w.IsLoaded)
         ?? (Application.Current?.MainWindow is { IsLoaded: true } main ? main : null);
 
-    public static bool Confirm(string heading, string? body = null, string confirm = "OK", string cancel = "Cancel") =>
-        Show(DialogKind.Question, heading, body, confirm, null, cancel) == DialogChoice.Primary;
+    public static bool Confirm(string heading, string? body = null, string? confirm = null, string? cancel = null) =>
+        Show(DialogKind.Question, heading, body, confirm ?? L.T("Ok"), null, cancel ?? L.T("Cancel")) == DialogChoice.Primary;
 
     /// <summary>For destructive actions: red button, and Enter picks Cancel.</summary>
     public static bool ConfirmDanger(string heading, string? body, string confirm) =>
-        Show(DialogKind.Danger, heading, body, confirm, null, "Cancel") == DialogChoice.Primary;
+        Show(DialogKind.Danger, heading, body, confirm, null, L.T("Cancel")) == DialogChoice.Primary;
 
     /// <summary>Three-way question, e.g. Save / Don't save / Cancel.</summary>
-    public static DialogChoice Ask(string heading, string? body, string primary, string secondary, string cancel = "Cancel") =>
-        Show(DialogKind.Question, heading, body, primary, secondary, cancel);
+    public static DialogChoice Ask(string heading, string? body, string primary, string secondary, string? cancel = null) =>
+        Show(DialogKind.Question, heading, body, primary, secondary, cancel ?? L.T("Cancel"));
 
-    public static void Info(string heading, string? body = null) => Show(DialogKind.Info, heading, body, "OK", null, null);
+    public static void Info(string heading, string? body = null) => Show(DialogKind.Info, heading, body, L.T("Ok"), null, null);
 
-    public static void Error(string body, string heading = "That didn't work") => Show(DialogKind.Error, heading, body, "OK", null, null);
+    public static void Error(string body, string? heading = null) =>
+        Show(DialogKind.Error, heading ?? L.T("ErrorHeading"), body, L.T("Ok"), null, null);
 
     public static DialogChoice Show(DialogKind kind, string heading, string? body, string primary, string? secondary, string? cancel)
     {

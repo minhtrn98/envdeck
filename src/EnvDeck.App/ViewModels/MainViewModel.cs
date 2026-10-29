@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EnvDeck.App.Localization;
 using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
@@ -22,7 +23,12 @@ public static class Options
 
     public static string[] Kinds { get; } = ["Auto", nameof(ValueKind.String), nameof(ValueKind.ExpandString)];
 
-    public static string[] ScopeFilters { get; } = ["All", nameof(EnvScope.User), nameof(EnvScope.Machine)];
+    public static Choice[] ScopeFilters { get; } =
+    [
+        new("All", "ScopeAll"),
+        new(nameof(EnvScope.User), "ScopeUser"),
+        new(nameof(EnvScope.Machine), "ScopeMachine"),
+    ];
 }
 
 public partial class MainViewModel : ObservableObject
@@ -30,6 +36,8 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         Service = DeckService.CreateDefault();
+        Loc.Instance.SetLanguage(Service.Settings.Language);
+        Status = L.T("Ready");
         Profiles = new ProfilesViewModel(this);
         CurrentEnv = new EnvironmentViewModel(this);
         Backups = new BackupsViewModel(this);
@@ -38,7 +46,8 @@ public partial class MainViewModel : ObservableObject
         Settings = new SettingsViewModel(this);
         ReloadAll();
         if (Service.ExternalEdits.Count > 0)
-            Status = $"Hand edits saved as new versions: {string.Join(", ", Service.ExternalEdits)}";
+            Status = L.T("HandEditsSaved", string.Join(", ", Service.ExternalEdits));
+        Loc.Instance.LanguageChanged += RefreshTexts;
     }
 
     public DeckService Service { get; private set; }
@@ -56,7 +65,7 @@ public partial class MainViewModel : ObservableObject
     public SettingsViewModel Settings { get; }
 
     [ObservableProperty]
-    public partial string Status { get; set; } = "Ready";
+    public partial string Status { get; set; } = "";
 
     // The status bar is one line; multi-line messages (e.g. validation errors) stay readable in its tooltip.
     partial void OnStatusChanged(string value)
@@ -73,7 +82,19 @@ public partial class MainViewModel : ObservableObject
     public bool CanElevate => !IsElevated;
 
     public string Title =>
-        $"EnvDeck {DeckService.ToolVersion}{(IsElevated ? " — Administrator" : "")}{(Service.Env.IsSandbox ? " — SANDBOX" : "")}";
+        $"EnvDeck {DeckService.ToolVersion}{(IsElevated ? " — " + L.T("Administrator") : "")}{(Service.Env.IsSandbox ? " — SANDBOX" : "")}";
+
+    /// <summary>XAML follows a language change by itself; text built here in code is rebuilt.</summary>
+    void RefreshTexts()
+    {
+        OnPropertyChanged(nameof(Title));
+        Status = L.T("Ready");
+        Profiles.Reload();
+        Backups.Refresh();
+        Compare.RefreshTexts();
+        Search.RefreshTexts();
+        Settings.RefreshTexts();
+    }
 
     /// <summary>Recreates the service, e.g. after the data folder changed.</summary>
     public void ReloadService()
@@ -101,7 +122,7 @@ public partial class MainViewModel : ObservableObject
             if (synced.Count > 0)
             {
                 Profiles.Reload();
-                Status = $"Hand edits saved as new versions: {string.Join(", ", synced)}";
+                Status = L.T("HandEditsSaved", string.Join(", ", synced));
             }
             else
             {
@@ -121,9 +142,8 @@ public partial class MainViewModel : ObservableObject
         }
         catch (ElevationRequiredException ex)
         {
-            Status = ex.Message;
-            if (Dialogs.Confirm("Administrator rights needed",
-                    $"{ex.Message} Restart EnvDeck as administrator to continue?", "Restart as administrator"))
+            Status = L.T("AdminNeededHeading");
+            if (Dialogs.Confirm(L.T("AdminNeededHeading"), L.T("AdminNeededBody", ex.Scope), L.T("RestartAsAdmin")))
                 RestartElevated();
             return false;
         }
@@ -150,7 +170,7 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Win32Exception)
         {
-            Status = "Elevation was cancelled.";
+            Status = L.T("ElevationCancelled");
         }
     }
 
