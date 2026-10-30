@@ -24,5 +24,11 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Margin" Value="{StaticResource CellPadding}" />
         </Style>
+        <!-- A combo column in edit mode otherwise gets the classic ComboBox style: light popup, white text on white. -->
+        <Style x:Key="CellComboEdit" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="{StaticResource CellPadding}" />
+            <Setter Property="IsSynchronizedWithCurrentItem" Value="False" />
+        </Style>
     </Application.Resources>
 </Application>

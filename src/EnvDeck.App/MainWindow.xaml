@@ -361,17 +361,17 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColScope}" Width="100"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColScope}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Scopes}"
                                                         SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColOp}" Width="100"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColOp}" Width="100"
                                                         ItemsSource="{x:Static vm:Options.Ops}"
                                                         SelectedItemBinding="{Binding Op, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Width="*"
                                                     Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" Header="{l:Tr ColKind}" Width="140"
+                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColKind}" Width="140"
                                                         ItemsSource="{x:Static vm:Options.Kinds}"
                                                         SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColNote}" Width="150"
@@ -528,14 +528,14 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" Header="{l:Tr ColScope}" Width="100"
+                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColScope}" Width="100"
                                                     SortMemberPath="Scope" ItemsSource="{x:Static vm:Options.Scopes}"
                                                     SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
                             <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColName}" Width="240"
                                                 SortMemberPath="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                             <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColValue}" Width="*"
                                                 SortMemberPath="Value" Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" Header="{l:Tr ColKind}" Width="140"
+                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColKind}" Width="140"
                                                     SortMemberPath="Kind" ItemsSource="{x:Static vm:Options.Kinds}"
                                                     SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
                         </DataGrid.Columns>
