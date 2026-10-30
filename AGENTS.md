@@ -35,6 +35,23 @@ no key used in XAML/code that is missing from the table.
 - Dialogs: use `Dialogs.Confirm/ConfirmDanger/Ask/Info/Error`, never `MessageBox`.
 - DataGrid cells use the shared `CellText` / `CellCombo` styles (App.xaml). Do **not** set a `RowStyle`
   `BasedOn="{x:Type DataGridRow}"` — it rendered rows with a white background in Fluent theme; style cells instead.
+- WPF Fluent gotchas for grid cells (all measured on screen, dark theme; re-check light after changing them):
+  - Combo columns: never use `DataGridComboBoxColumn` — it needs 3 clicks (select row, edit mode, open) and its
+    editing ComboBox is taller. Use a `DataGridTemplateColumn` with a `ComboBox Style="{StaticResource CellCombo}"`
+    (flat template: no box, chevron, popup with theme brushes). It takes its text colour from the cell and goes
+    dark on a selected row, because the theme colours the text per state and that is unreadable there.
+  - Text cells: set `EditingElementStyle="{StaticResource CellTextEdit}"` next to `ElementStyle`. It matches the
+    TextBlock's left edge and height so text does not jump, covers the whole cell (negative margin, square corners
+    via `ControlCornerRadius`, no accent underline) and uses the opaque `SolidBackgroundFillColorBase`: the theme's
+    input fill is translucent, so on a selected row it turned purple.
+  - Theme brushes are overridden through `Style.Resources` with the theme's own keys (`TextControlBackground*`,
+    `ComboBox*`, `ControlCornerRadius`); list them by searching `PresentationFramework.Fluent.dll` for the key text.
+    `TextBox`/`Control` have no `CornerRadius` property.
+  - Inside a custom template, give inner `ToggleButton`/`Button` `Style="{x:Null}"`, or the implicit theme style
+    overrides foreground and padding.
+  - Moving a row (`ObservableCollection.Move`) drops keyboard focus: re-focus the moved row's cell (`FocusItem`).
+  - Check selected rows with a real mouse click (UI Automation `SetFocus` does not select the row, so colours
+    differ), and measure pixels/heights instead of judging screenshots by eye.
 - Font is Segoe UI. Keep the existing comment density: short `///` summaries that explain *why*.
 - Keep keyboard/accessibility parity (e.g. Alt+Up/Down as the alternative to dragging).
 
