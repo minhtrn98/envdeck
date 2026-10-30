@@ -6,6 +6,11 @@ namespace EnvDeck.Cli;
 
 static class Commands
 {
+    const string SecretMask = "••••••••";
+
+    static string DisplayValue(DeckService service, string name, string? value) =>
+        string.IsNullOrEmpty(value) ? "" : service.IsSecret(name) ? SecretMask : value;
+
     // ---------------------------------------------------------------- profiles
 
     public static int List(DeckService svc, CliArgs a)
@@ -48,7 +53,7 @@ static class Commands
         if (p.Variables.Count == 0) Out.Dim("(no variables)   add one: envdeck set " + p.Name + " NAME VALUE");
         else
             Out.Table(["SCOPE", "OP", "NAME", "VALUE"],
-                p.Variables.Select(v => Row(v.Scope.ToString(), v.Op.ToString(), v.Name, v.Value ?? "")), 100);
+                p.Variables.Select(v => Row(v.Scope.ToString(), v.Op.ToString(), v.Name, DisplayValue(svc, v.Name, v.Value))), 100);
         return 0;
     }
 
@@ -341,12 +346,27 @@ static class Commands
 
     public static int Export(DeckService svc, CliArgs a)
     {
-        var file = a.Arg(0, "file.zip");
+        var file = a.Arg(0, "file");
         var withHistory = a.Flag("with-history");
         var withBackups = a.Flag("with-backups");
+        var encrypt = a.Flag("encrypt");
+        var password = a.Option("password") ?? Environment.GetEnvironmentVariable("ENVDECK_PASSWORD");
         a.EnsureNoUnknownOptions();
-        var manifest = svc.Export(file, a.Positionals.Skip(1).ToList(), withHistory, withBackups);
+
+        // A .envdeck file, --encrypt or a given password all mean "protect it"; a plain .zip is readable by anyone.
+        encrypt |= password is not null || file.EndsWith(".envdeck", StringComparison.OrdinalIgnoreCase);
+        if (encrypt && password is null)
+        {
+            password = Password.Ask("Password for the bundle: ");
+            if (password != Password.Ask("Repeat the password: ")) throw new DeckException("The passwords do not match.");
+        }
+
+        var manifest = svc.Export(file, a.Positionals.Skip(1).ToList(), withHistory, withBackups, encrypt ? password : null);
         Out.Success($"Exported {manifest.Profiles.Count} profile(s){(withHistory ? " with history" : "")}{(withBackups ? " and backups" : "")} to {Path.GetFullPath(file)}");
+        if (encrypt)
+            Out.Dim("Encrypted (AES-256-GCM). There is no way to recover the password; without it the file cannot be opened.");
+        else
+            Out.Warn("The bundle is not encrypted: variable values, secrets included, are readable. Use --encrypt (or a .envdeck file name) to protect it.");
         Out.Dim("On the other machine: envdeck import " + Path.GetFileName(file));
         return 0;
     }
@@ -355,15 +375,35 @@ static class Commands
     {
         var file = a.Arg(0, "file");
         var overwrite = a.Flag("overwrite");
+        var given = a.Option("password") ?? Environment.GetEnvironmentVariable("ENVDECK_PASSWORD");
         a.EnsureNoUnknownOptions();
-        var result = svc.Import(file, overwrite);
+
+        BundleResult result;
+        var password = given;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                result = svc.Import(file, overwrite, password);
+                break;
+            }
+            catch (PasswordRequiredException)
+            {
+                password = Password.Ask("Password: ");
+            }
+            catch (WrongPasswordException) when (given is null && attempt < 3)
+            {
+                Out.Warn("Wrong password, or the file was changed or damaged. Try again.");
+                password = Password.Ask("Password: ");
+            }
+        }
+
         foreach (var name in result.Imported) Out.Success($"  imported {name}");
         foreach (var name in result.Skipped) Out.Warn($"skipped {name} (already exists; use --overwrite to save it as a new version)");
         if (result.Backups.Count > 0) Out.Line($"  {result.Backups.Count} backup(s) imported");
         if (result.Imported.Count > 0) Out.Dim("Turn them on with: envdeck apply <profile>");
         return 0;
     }
-
     // ---------------------------------------------------------------- search / compare
 
     public static int Search(DeckService svc, CliArgs a)
@@ -394,7 +434,7 @@ static class Commands
         }
         Out.Table(["SOURCE", "SCOPE", "NAME", "VALUE"],
             hits.Select(h => Row(h.Source, h.Scope.ToString(), h.Name,
-                (h.Op is { } op && op != VarOp.Set ? $"[{op}] " : "") + (h.Value ?? ""))), 100);
+                (h.Op is { } op && op != VarOp.Set ? $"[{op}] " : "") + DisplayValue(svc, h.Name, h.Value))), 100);
         return 0;
     }
 
@@ -416,20 +456,26 @@ static class Commands
         foreach (var row in rows)
         {
             var key = $"{row.Scope}\\{row.Name}";
+            var secret = svc.IsSecret(row.Name);
             switch (row.Kind)
             {
                 case DiffKind.Same:
-                    Out.Dim($"  = {key} = {row.Left}");
+                    Out.Dim($"  = {key} = {DisplayValue(svc, row.Name, row.Left)}");
                     break;
                 case DiffKind.Added:
-                    Out.Line($"  + {key} = {row.Right}", ConsoleColor.Green);
+                    Out.Line($"  + {key} = {DisplayValue(svc, row.Name, row.Right)}", ConsoleColor.Green);
                     break;
                 case DiffKind.Removed:
-                    Out.Line($"  - {key} = {row.Left}", ConsoleColor.Red);
+                    Out.Line($"  - {key} = {DisplayValue(svc, row.Name, row.Left)}", ConsoleColor.Red);
                     break;
                 case DiffKind.Changed:
                     Out.Line($"  ~ {key}", ConsoleColor.Yellow);
-                    if (PathList.Split(row.Left).Count > 1 || PathList.Split(row.Right).Count > 1)
+                    if (secret)
+                    {
+                        Out.Line($"      - {DisplayValue(svc, row.Name, row.Left)}", ConsoleColor.Red);
+                        Out.Line($"      + {DisplayValue(svc, row.Name, row.Right)}", ConsoleColor.Green);
+                    }
+                    else if (PathList.Split(row.Left).Count > 1 || PathList.Split(row.Right).Count > 1)
                     {
                         foreach (var e in row.OnlyLeft) Out.Line($"      - {e}", ConsoleColor.Red);
                         foreach (var e in row.OnlyRight) Out.Line($"      + {e}", ConsoleColor.Green);
@@ -471,7 +517,7 @@ static class Commands
             .ToList();
 
         // A single list variable (e.g. "envdeck env path") is easier to read one entry per line.
-        if (rows.Count is 1 or 2 && rows.All(r => PathList.Split(r.Value.Value).Count > 1))
+        if (rows.Count is 1 or 2 && rows.All(r => !svc.IsSecret(r.Value.Name) && PathList.Split(r.Value.Value).Count > 1))
         {
             foreach (var (sc, v) in rows)
             {
@@ -484,7 +530,7 @@ static class Commands
             }
             return 0;
         }
-        Out.Table(["SCOPE", "NAME", "VALUE"], rows.Select(r => Row(r.Scope.ToString(), r.Value.Name, r.Value.Value)), 100);
+        Out.Table(["SCOPE", "NAME", "VALUE"], rows.Select(r => Row(r.Scope.ToString(), r.Value.Name, DisplayValue(svc, r.Value.Name, r.Value.Value))), 100);
         return 0;
     }
 

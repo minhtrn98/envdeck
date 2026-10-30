@@ -9,7 +9,7 @@ sealed class CliArgs
     static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase)
     {
         "help", "version", "dry-run", "regex", "keys", "values", "prune", "overwrite", "with-history",
-        "with-backups", "portable", "json", "purge", "all", "show-same",
+        "with-backups", "encrypt", "portable", "json", "purge", "all", "show-same",
     };
 
     readonly Dictionary<string, string?> _options = new(StringComparer.OrdinalIgnoreCase);

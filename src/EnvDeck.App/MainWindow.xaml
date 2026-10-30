@@ -83,6 +83,37 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <!-- Eye at the end of a secret's value cell: pressed = the real value is shown. -->
+        <Style x:Key="EyeToggle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridCell}}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Face" Background="Transparent">
+                            <TextBlock x:Name="Glyph" Text="&#xE890;" FontFamily="{StaticResource IconFont}" FontSize="14" Margin="0,2,0,0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.75" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Glyph" Property="Text" Value="&#xED1A;" />
+                                <Setter TargetName="Glyph" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Face" Property="Background" Value="#1A808080" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                    <Setter Property="Foreground" Value="#1B1B1B" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
             <Setter Property="Opacity" Value="0.7" />
             <Setter Property="TextWrapping" Value="Wrap" />
@@ -379,7 +410,23 @@
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   CanUserReorderColumns="False" HeadersVisibility="Column" Sorting="Grid_Sorting"
                                   AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
-                                  PreviewKeyDown="VariablesGrid_PreviewKeyDown">
+                                  PreviewKeyDown="VariablesGrid_PreviewKeyDown" PreviewMouseRightButtonDown="Grid_RightClickSelect">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{Binding SelectedVariable.SecretToggleText}" Command="{Binding ToggleSecretCommand}">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="&#xE890;" FontFamily="{StaticResource IconFont}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Header="{l:Tr RemoveVariable}" Command="{Binding RemoveVariableCommand}"
+                                              Foreground="{StaticResource DangerBrush}">
+                                        <MenuItem.Icon>
+                                            <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}" Foreground="{StaticResource DangerBrush}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Width="34" CanUserResize="False">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -413,8 +460,29 @@
                             </DataGridTemplateColumn>
                                 <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Width="*"
-                                                    Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTemplateColumn Header="{l:Tr ColValue}" Width="*" SortMemberPath="Value">
+                                    <!-- Secrets are masked; the eye shows one, and editing a cell always shows the real text. -->
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding ValueShown}" Style="{StaticResource CellText}" />
+                                                <ToggleButton Grid.Column="1" Style="{StaticResource EyeToggle}" ToolTip="{l:Tr RevealSecret}"
+                                                              IsChecked="{Binding IsRevealed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Visibility="{Binding IsSecret, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                        <DataTemplate>
+                                            <TextBox Style="{StaticResource CellTextEdit}" Loaded="EditBox_Loaded"
+                                                     Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                </DataGridTemplateColumn>
                                 <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
                             <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -549,7 +617,8 @@
                     </DockPanel>
                     <DataGrid x:Name="EnvGrid" Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                              SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting">
+                              SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting"
+                              PreviewMouseRightButtonDown="Grid_RightClickSelect">
                         <DataGrid.InputBindings>
                             <KeyBinding Key="Delete" Command="{Binding DeleteVariableCommand}" />
                         </DataGrid.InputBindings>
@@ -563,6 +632,11 @@
                                 <MenuItem Header="{l:Tr CopyValue}" Command="{Binding CopyValueCommand}">
                                     <MenuItem.Icon>
                                         <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource IconFont}" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="{Binding Selected.SecretToggleText}" Command="{Binding ToggleSecretCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE890;" FontFamily="{StaticResource IconFont}" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator />
@@ -599,8 +673,29 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColName}" Width="240"
                                                 SortMemberPath="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Width="*"
-                                                SortMemberPath="Value" Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTemplateColumn Header="{l:Tr ColValue}" Width="*" SortMemberPath="Value">
+                                    <!-- Secrets are masked; the eye shows one, and editing a cell always shows the real text. -->
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding ValueShown}" Style="{StaticResource EnvCellText}" />
+                                                <ToggleButton Grid.Column="1" Style="{StaticResource EyeToggle}" ToolTip="{l:Tr RevealSecret}"
+                                                              IsChecked="{Binding IsRevealed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Visibility="{Binding IsSecret, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                        <DataTemplate>
+                                            <TextBox Style="{StaticResource CellTextEdit}" Loaded="EditBox_Loaded"
+                                                     Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                </DataGridTemplateColumn>
                             <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
                             <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140">
                                 <DataGridTemplateColumn.CellTemplate>

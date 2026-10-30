@@ -145,11 +145,12 @@ public sealed class DiffRowViewModel(DiffRow row)
 
     public string Variable { get; } = $"{row.Scope}\\{row.Name}";
 
-    public string Left { get; } = row.Left ?? "";
+    public string Left { get; } = Secrecy.Show(row.Name, row.Left);
 
-    public string Right { get; } = row.Right ?? "";
+    public string Right { get; } = Secrecy.Show(row.Name, row.Right);
 
-    public string Details { get; } = string.Join("   ",
+    // The entries of a secret list would give the values away, so they are left out.
+    public string Details { get; } = Secrecy.IsSecret(row.Name) ? "" : string.Join("   ",
         row.OnlyLeft.Select(e => "− " + e).Concat(row.OnlyRight.Select(e => "+ " + e)));
 }
 
@@ -226,7 +227,7 @@ public sealed class SearchHitRow(SearchHit hit)
 
     public string Variable { get; } = $"{hit.Scope}\\{hit.Name}";
 
-    public string Value { get; } = (hit.Op is { } op && op != VarOp.Set ? $"[{op}] " : "") + (hit.Value ?? "");
+    public string Value { get; } = (hit.Op is { } op && op != VarOp.Set ? $"[{op}] " : "") + Secrecy.Show(hit.Name, hit.Value);
 }
 
 public partial class SearchViewModel(MainViewModel main) : ObservableObject
@@ -417,15 +418,28 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
     [RelayCommand]
     void Export()
     {
-        var file = Dialogs.SaveFile(L.T("ExportFilter"), $"envdeck-{Environment.MachineName}-{DateTime.Now:yyyyMMdd}.zip");
+        var file = Dialogs.SaveFile(L.T("ExportFilter"), $"envdeck-{Environment.MachineName}-{DateTime.Now:yyyyMMdd}.envdeck");
         if (file is null) return;
+
+        // .envdeck is encrypted; a .zip is the old readable format and needs a deliberate yes.
+        string? password = null;
+        if (file.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!Dialogs.ConfirmWarning(L.T("ExportPlainHeading"), L.T("ExportPlainBody"), L.T("ExportPlainConfirm"))) return;
+        }
+        else if ((password = Dialogs.Password(L.T("ExportPasswordTitle"), L.T("ExportPasswordLabel"), confirm: true,
+                      L.T("ExportPasswordNote", BundleCrypto.MinPasswordLength))) is null)
+        {
+            return;
+        }
+
         var answer = Dialogs.Ask(L.T("ExportBackupsHeading"), L.T("ExportBackupsBody"), L.T("IncludeBackups"), L.T("ProfilesOnly"));
         if (answer == DialogChoice.Cancel) return;
         var withBackups = answer == DialogChoice.Primary;
         main.Run(() =>
         {
-            var manifest = main.Service.Export(file, null, withHistory: true, withBackups);
-            main.Status = L.T("Exported", manifest.Profiles.Count, file);
+            var manifest = main.Service.Export(file, null, withHistory: true, withBackups, password);
+            main.Status = L.T(password is null ? "Exported" : "ExportedEncrypted", manifest.Profiles.Count, file);
         });
     }
 
@@ -436,11 +450,27 @@ public partial class SettingsViewModel(MainViewModel main) : ObservableObject
         if (file is null) return;
         main.Run(() =>
         {
-            var result = main.Service.Import(file, overwrite: false);
+            // An encrypted bundle asks for its password, again after a wrong one, until it opens or the user gives up.
+            string? password = null;
+            BundleResult result;
+            while (true)
+            {
+                try
+                {
+                    result = main.Service.Import(file, overwrite: false, password);
+                    break;
+                }
+                catch (Exception ex) when (ex is PasswordRequiredException or WrongPasswordException)
+                {
+                    if (ex is WrongPasswordException) Dialogs.Error(ex.Message);
+                    password = Dialogs.Password(L.T("ImportPasswordTitle"), L.T("ImportPasswordLabel", Path.GetFileName(file)), confirm: false);
+                    if (password is null) return;
+                }
+            }
             if (result.Skipped.Count > 0
                 && Dialogs.Confirm(L.T("ExistingProfilesHeading", result.Skipped.Count),
                     L.T("ExistingProfilesBody", string.Join(", ", result.Skipped)), L.T("Overwrite"), L.T("SkipThem")))
-                result = main.Service.Import(file, overwrite: true);
+                result = main.Service.Import(file, overwrite: true, password);
             main.Status = L.T("Imported", result.Imported.Count, result.Backups.Count);
         });
         main.ReloadAll();

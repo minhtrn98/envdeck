@@ -11,12 +11,12 @@ namespace EnvDeck.App.ViewModels;
 /// <summary>Picks variables (or single list entries) of the current environment to add to a profile.</summary>
 public partial class EnvPickerViewModel : ObservableObject
 {
-    public EnvPickerViewModel(IEnvStore env)
+    public EnvPickerViewModel(DeckService service)
     {
         foreach (var scope in Options.Scopes)
-        foreach (var value in env.GetAll(scope))
+        foreach (var value in service.Env.GetAll(scope))
         {
-            var item = new PickVariable(scope, value);
+            var item = new PickVariable(scope, value, service.IsSecret(value.Name));
             item.Changed += () => OnPropertyChanged(nameof(Summary));
             Items.Add(item);
         }
@@ -78,10 +78,11 @@ public partial class EnvPickerViewModel : ObservableObject
 
 public partial class PickVariable : ObservableObject
 {
-    public PickVariable(EnvScope scope, EnvValue source)
+    public PickVariable(EnvScope scope, EnvValue source, bool isSecret)
     {
         Scope = scope;
         Source = source;
+        if (isSecret) return; // Individual path entries are values too; keep them hidden in the picker.
         var entries = PathList.Split(source.Value);
         if (entries.Count < 2) return;
         foreach (var e in entries)
@@ -101,7 +102,7 @@ public partial class PickVariable : ObservableObject
 
     public string Name => Source.Name;
 
-    public string Value => Source.Value;
+    public string Value => Secrecy.Show(Name, Source.Value);
 
     public ObservableCollection<PickEntry> Entries { get; } = [];
 

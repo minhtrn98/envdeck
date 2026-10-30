@@ -67,7 +67,7 @@ public partial class EnvironmentViewModel : ObservableObject
 
     public string ApplyText => HasPending ? L.T("ApplyPending", PendingCount) : L.T("Apply");
 
-    public bool ShowEntries => Selected is { IsListLike: true, IsDeleted: false };
+    public bool ShowEntries => Selected is { IsListLike: true, IsDeleted: false } row && (!row.IsSecret || row.IsRevealed);
 
     public string EntriesTitle => Selected is null ? L.T("Entries") : L.T("EntriesOf", Selected.Name);
 
@@ -89,7 +89,41 @@ public partial class EnvironmentViewModel : ObservableObject
         if (editable.IsEditingItem) editable.CommitEdit();
     }
 
-    partial void OnSelectedChanged(EnvRowViewModel? value) => RebuildEntries();
+    partial void OnSelectedChanged(EnvRowViewModel? value)
+    {
+        if (_previousSelected is not null) _previousSelected.PropertyChanged -= SelectedRow_PropertyChanged;
+        _previousSelected = value;
+        RebuildEntries();
+        if (value is not null) value.PropertyChanged += SelectedRow_PropertyChanged;
+    }
+
+    EnvRowViewModel? _previousSelected;
+
+    void SelectedRow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(EnvRowViewModel.IsRevealed) or nameof(EnvRowViewModel.IsSecret))
+            OnPropertyChanged(nameof(ShowEntries));
+    }
+
+    /// <summary>After the user marked a name as secret or plain.</summary>
+    public void RefreshSecrets()
+    {
+        foreach (var row in Rows) row.RefreshSecret();
+        RebuildEntries();
+        OnPropertyChanged(nameof(ShowEntries));
+    }
+
+    [RelayCommand]
+    void ToggleSecret(EnvRowViewModel? target)
+    {
+        if ((target ?? Selected) is not { } row || string.IsNullOrWhiteSpace(row.Name)) return;
+        var secret = !row.IsSecret;
+        var name = row.Name.Trim();
+        if (!_main.Run(() => Secrecy.Set(name, secret))) return;
+        RefreshSecrets();
+        _main.Profiles.RefreshSecrets();
+        _main.Status = L.T(secret ? "MarkedSecret" : "MarkedPlain", name);
+    }
 
     /// <summary>Rebuilds the text made in code after a language change; pending edits are kept.</summary>
     public void RefreshTexts()
@@ -225,8 +259,10 @@ public partial class EnvironmentViewModel : ObservableObject
     void CopyValue()
     {
         if (Selected is null) return;
-        Clipboard.SetText(Selected.Value);
-        _main.Status = L.T("CopiedValue", Selected.Name);
+        Secrecy.Copy(Selected.Value, Selected.IsSecret);
+        _main.Status = Selected.IsSecret
+            ? L.T("CopiedSecret", Selected.Name, Secrecy.ClipboardSeconds)
+            : L.T("CopiedValue", Selected.Name);
     }
 
     [RelayCommand(CanExecute = nameof(HasPending))]
@@ -405,12 +441,30 @@ public partial class EnvRowViewModel : ObservableObject
     public partial EnvScope Scope { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsListLike))]
+    [NotifyPropertyChangedFor(nameof(IsListLike), nameof(IsSecret), nameof(ValueShown), nameof(SecretToggleText))]
     public partial string Name { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(State), nameof(Marker), nameof(StateTip), nameof(IsListLike))]
+    [NotifyPropertyChangedFor(nameof(State), nameof(Marker), nameof(StateTip), nameof(IsListLike), nameof(ValueShown))]
     public partial string Value { get; set; }
+
+    /// <summary>The value is masked until the eye button is pressed (per row, forgotten on reload).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ValueShown))]
+    public partial bool IsRevealed { get; set; }
+
+    public bool IsSecret => Secrecy.IsSecret(Name);
+
+    public string ValueShown => IsRevealed ? Value : Secrecy.Show(Name, Value);
+
+    public string SecretToggleText => L.T(IsSecret ? "TreatAsPlain" : "TreatAsSecret");
+
+    public void RefreshSecret()
+    {
+        OnPropertyChanged(nameof(IsSecret));
+        OnPropertyChanged(nameof(ValueShown));
+        OnPropertyChanged(nameof(SecretToggleText));
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(State), nameof(Marker), nameof(StateTip))]
@@ -487,6 +541,7 @@ public partial class EnvRowViewModel : ObservableObject
 
     public void RefreshTexts()
     {
+        OnPropertyChanged(nameof(SecretToggleText));
         OnPropertyChanged(nameof(LockTip));
         OnPropertyChanged(nameof(StateTip));
     }
@@ -502,7 +557,7 @@ public partial class EnvRowViewModel : ObservableObject
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.PropertyName is nameof(Scope) or nameof(Name) or nameof(Value) or nameof(Kind) or nameof(IsDeleted))
+        if (e.PropertyName is nameof(Scope) or nameof(Name) or nameof(Value) or nameof(Kind) or nameof(IsDeleted) or nameof(IsRevealed))
             Changed?.Invoke(this);
     }
 }

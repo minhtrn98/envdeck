@@ -299,13 +299,15 @@ public partial class ProfilesViewModel : ObservableObject
         if (conflicts.Count == 0) return true;
 
         var lines = conflicts.Take(8).Select(c => L.T("ConflictLine", $"{c.Scope}\\{c.Name}", c.OtherProfile,
-            Short(c.OtherValue), Short(c.NewValue))).ToList();
+            Short(c.Name, c.OtherValue), Short(c.Name, c.NewValue))).ToList();
         if (conflicts.Count > 8) lines.Add(L.T("AndMore", conflicts.Count - 8));
         return Dialogs.ConfirmWarning(L.T("ConflictHeading", name), L.T("ConflictBody", string.Join("\n", lines), name),
             L.T("TurnOnAnyway"));
 
-        static string Short(string? value) =>
-            value is null ? L.T("ValueDeleted") : value.Length <= 48 ? value : value[..47] + "…";
+        static string Short(string name, string? value) =>
+            value is null ? L.T("ValueDeleted")
+            : Secrecy.IsSecret(name) ? Secrecy.Mask
+            : value.Length <= 48 ? value : value[..47] + "…";
     }
 
     /// <summary>Unsaved edits of <paramref name="name"/> would be lost or left out; offer to save them first.</summary>
@@ -377,7 +379,7 @@ public partial class ProfilesViewModel : ObservableObject
         if (Editor is null) return;
         var editor = Editor;
         EnvPickerViewModel? picker = null;
-        if (!_main.Run(() => picker = new EnvPickerViewModel(Service.Env))) return;
+        if (!_main.Run(() => picker = new EnvPickerViewModel(Service))) return;
 
         var window = new EnvPickerWindow(picker!) { Owner = Application.Current.MainWindow };
         if (window.ShowDialog() != true) return;
@@ -385,6 +387,27 @@ public partial class ProfilesViewModel : ObservableObject
         foreach (var v in window.Result) last = editor.Merge(v);
         SelectedVariable = last;
         _main.Status = L.T("AddedFromEnv", window.Result.Count, editor.Name);
+    }
+
+    /// <summary>After the Environment tab marked a name as secret or plain.</summary>
+    public void RefreshSecrets()
+    {
+        if (Editor is null) return;
+        foreach (var v in Editor.Variables) v.RefreshSecret();
+    }
+
+    /// <summary>Masks or unmasks the values of this name everywhere (a setting of the app, not part of the profile).</summary>
+    [RelayCommand]
+    void ToggleSecret(VariableViewModel? row)
+    {
+        row ??= SelectedVariable;
+        if (Editor is null || row is null || string.IsNullOrWhiteSpace(row.Name)) return;
+        var secret = !row.IsSecret;
+        var name = row.Name.Trim();
+        if (!_main.Run(() => Secrecy.Set(name, secret))) return;
+        foreach (var v in Editor.Variables) v.RefreshSecret();
+        _main.CurrentEnv.RefreshSecrets();
+        _main.Status = L.T(secret ? "MarkedSecret" : "MarkedPlain", name);
     }
 
     /// <summary>The trash button of a row passes that row; without one, the selected row goes.</summary>
@@ -613,7 +636,13 @@ public partial class ProfileEditorViewModel : ObservableObject
         Variables.Add(v);
     }
 
-    void OnVariableChanged(object? sender, PropertyChangedEventArgs e) => MarkChanged();
+    void OnVariableChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Showing or hiding a secret is not an edit of the profile.
+        if (e.PropertyName is nameof(VariableViewModel.IsRevealed) or nameof(VariableViewModel.IsSecret)
+            or nameof(VariableViewModel.ValueShown) or nameof(VariableViewModel.SecretToggleText)) return;
+        MarkChanged();
+    }
 
     static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }
@@ -637,9 +666,11 @@ public partial class VariableViewModel : ObservableObject
     public partial VarOp Op { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSecret), nameof(ValueShown), nameof(SecretToggleText))]
     public partial string Name { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ValueShown))]
     public partial string Value { get; set; }
 
     [ObservableProperty]
@@ -647,6 +678,25 @@ public partial class VariableViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string Note { get; set; }
+
+    /// <summary>The value is masked until the eye button is pressed (per row, forgotten when the profile is reloaded).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ValueShown))]
+    public partial bool IsRevealed { get; set; }
+
+    public bool IsSecret => Secrecy.IsSecret(Name);
+
+    public string ValueShown => IsRevealed ? Value : Secrecy.Show(Name, Value);
+
+    public string SecretToggleText => L.T(IsSecret ? "TreatAsPlain" : "TreatAsSecret");
+
+    /// <summary>After the user marked a name as secret or plain.</summary>
+    public void RefreshSecret()
+    {
+        OnPropertyChanged(nameof(IsSecret));
+        OnPropertyChanged(nameof(ValueShown));
+        OnPropertyChanged(nameof(SecretToggleText));
+    }
 
     public ProfileVariable ToModel() => new()
     {
@@ -665,7 +715,7 @@ public sealed class ChangeRow(PlannedChange change)
 
     public string Variable { get; } = $"{change.Scope}\\{change.Name}";
 
-    public string Before { get; } = change.Before ?? L.T("ValueNotSet");
+    public string Before { get; } = change.Before is null ? L.T("ValueNotSet") : Secrecy.Show(change.Name, change.Before);
 
-    public string After { get; } = change.After ?? L.T("ValueDeleted");
+    public string After { get; } = change.After is null ? L.T("ValueDeleted") : Secrecy.Show(change.Name, change.After);
 }

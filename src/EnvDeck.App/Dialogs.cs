@@ -47,6 +47,13 @@ static class Dialogs
         return dialog.ShowDialog() == true ? dialog.Value : null;
     }
 
+    /// <summary>Asks for a password (twice, with a minimum length, when <paramref name="confirm"/>); null when cancelled.</summary>
+    public static string? Password(string title, string label, bool confirm, string? note = null)
+    {
+        var dialog = new PasswordWindow(title, label, confirm, note) { Owner = Owner };
+        return dialog.ShowDialog() == true ? dialog.Value : null;
+    }
+
     public static string? OpenFile(string filter)
     {
         var dialog = new OpenFileDialog { Filter = filter };

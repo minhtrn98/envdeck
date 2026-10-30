@@ -49,11 +49,23 @@ no key used in XAML/code that is missing from the table.
     `TextBox`/`Control` have no `CornerRadius` property.
   - Inside a custom template, give inner `ToggleButton`/`Button` `Style="{x:Null}"`, or the implicit theme style
     overrides foreground and padding.
+  - Bindings inside a cell template to `ToggleButton.IsChecked` (and other controls that edit the row) must say
+    `Mode=TwoWay, UpdateSourceTrigger=PropertyChanged`; relying on the default left the view model unchanged
+    (the eye button toggled but the text stayed masked).
+  - A templated cell editor does not take focus by itself: give its TextBox a `Loaded` handler that focuses it.
   - Moving a row (`ObservableCollection.Move`) drops keyboard focus: re-focus the moved row's cell (`FocusItem`).
   - Check selected rows with a real mouse click (UI Automation `SetFocus` does not select the row, so colours
     differ), and measure pixels/heights instead of judging screenshots by eye.
 - Font is Segoe UI. Keep the existing comment density: short `///` summaries that explain *why*.
 - Keep keyboard/accessibility parity (e.g. Alt+Up/Down as the alternative to dragging).
+
+## Secrets
+
+- `SecretNames.Looks` guesses from a name; the user's override lives in `settings.json` (`secretNames`, `plainNames`).
+  Never put a value where the UI can show it without going through `Secrecy.Show` (tables, search, compare, preview,
+  conflict dialogs, status text). Reveal state is per row and is not an edit of the profile.
+- Bundles: `BundleCrypto` (AES-256-GCM, PBKDF2-SHA256 600k) works in memory, so a readable zip never reaches the disk.
+  Passwords are normalized (FormKC) before use. Do not log or echo them; the CLI reads them without echo.
 
 ## Testing the UI
 

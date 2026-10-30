@@ -58,6 +58,22 @@ public partial class MainWindow : Window
             _vm.Profiles.ToggleActiveCommand.Execute(item);
     }
 
+    // ---------------------------------------------------------------- cell editors and menus
+
+    /// <summary>A templated editor does not take focus by itself; without this the first keystroke goes nowhere.</summary>
+    void EditBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox box) return;
+        box.Focus();
+        box.SelectAll();
+    }
+
+    /// <summary>Right-clicking a row selects it first, so the context menu acts on the row under the pointer.</summary>
+    void Grid_RightClickSelect(object sender, MouseButtonEventArgs e)
+    {
+        if (FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject) is { IsSelected: false } row) row.IsSelected = true;
+    }
+
     // ---------------------------------------------------------------- sorting
 
     /// <summary>Header clicks cycle ascending, descending, unsorted (WPF alone would go ascending again).</summary>

@@ -114,6 +114,23 @@ public sealed class DeckService
 
     public void SaveSettings() => DeckJson.Write(Paths.SettingsFile, Settings);
 
+    /// <summary>Whether the UI should mask this variable's value: the user's choice, else what the name suggests.</summary>
+    public bool IsSecret(string name)
+    {
+        if (Settings.PlainNames.Contains(name, StringComparer.OrdinalIgnoreCase)) return false;
+        return Settings.SecretNames.Contains(name, StringComparer.OrdinalIgnoreCase) || SecretNames.Looks(name);
+    }
+
+    /// <summary>Marks a name as secret or plain; only a choice that differs from the name-based guess is stored.</summary>
+    public void SetSecret(string name, bool secret)
+    {
+        name = name.Trim();
+        Settings.SecretNames.RemoveAll(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        Settings.PlainNames.RemoveAll(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        if (secret != SecretNames.Looks(name)) (secret ? Settings.SecretNames : Settings.PlainNames).Add(name);
+        SaveSettings();
+    }
+
     public bool IsActive(string name) => State.Load().Applied.Any(a => Same(a.Profile, name));
 
     // ---------------------------------------------------------------- on / off
@@ -681,7 +698,12 @@ public sealed class DeckService
 
     // ---------------------------------------------------------------- move between machines
 
-    public BundleManifest Export(string zipPath, IReadOnlyCollection<string>? profileNames, bool withHistory, bool withBackups)
+    /// <summary>
+    /// Writes a bundle. With a <paramref name="password"/> the whole file is encrypted (see <see cref="BundleCrypto"/>);
+    /// without one it is a plain .zip and everything in it, secrets included, is readable.
+    /// </summary>
+    public BundleManifest Export(string zipPath, IReadOnlyCollection<string>? profileNames, bool withHistory, bool withBackups,
+        string? password = null)
     {
         var names = profileNames is { Count: > 0 } ? profileNames.ToList() : Profiles.List().Select(p => p.Name).ToList();
         var manifest = new BundleManifest
@@ -697,42 +719,85 @@ public sealed class DeckService
         Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         var tmp = full + ".tmp";
         File.Delete(tmp);
-        using (var zip = ZipFile.Open(tmp, ZipArchiveMode.Create))
+
+        // Encrypted bundles are built in memory, so the readable zip never touches the disk.
+        using (Stream buffer = password is null ? new FileStream(tmp, FileMode.Create) : new MemoryStream())
         {
-            foreach (var name in names)
+            using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
             {
-                var profile = Profiles.Get(name);
-                zip.CreateEntryFromFile(Profiles.FileOf(profile.Name), $"profiles/{profile.Name}.json");
-                manifest.Profiles.Add(profile.Name);
-                if (!withHistory) continue;
-                foreach (var (version, file) in Profiles.HistoryFiles(profile.Name))
-                    zip.CreateEntryFromFile(file, $"history/{profile.Name}/v{version:D4}.json");
+                foreach (var name in names)
+                {
+                    var profile = Profiles.Get(name);
+                    zip.CreateEntryFromFile(Profiles.FileOf(profile.Name), $"profiles/{profile.Name}.json");
+                    manifest.Profiles.Add(profile.Name);
+                    if (!withHistory) continue;
+                    foreach (var (version, file) in Profiles.HistoryFiles(profile.Name))
+                        zip.CreateEntryFromFile(file, $"history/{profile.Name}/v{version:D4}.json");
+                }
+                if (withBackups && Directory.Exists(Paths.BackupsDir))
+                {
+                    foreach (var file in Directory.EnumerateFiles(Paths.BackupsDir, "*.json"))
+                        zip.CreateEntryFromFile(file, $"backups/{Path.GetFileName(file)}");
+                }
+                using var writer = new StreamWriter(zip.CreateEntry("manifest.json").Open());
+                writer.Write(DeckJson.Serialize(manifest));
             }
-            if (withBackups && Directory.Exists(Paths.BackupsDir))
+
+            if (password is not null)
             {
-                foreach (var file in Directory.EnumerateFiles(Paths.BackupsDir, "*.json"))
-                    zip.CreateEntryFromFile(file, $"backups/{Path.GetFileName(file)}");
+                var plain = ((MemoryStream)buffer).ToArray();
+                try
+                {
+                    File.WriteAllBytes(tmp, BundleCrypto.Encrypt(plain, password));
+                }
+                finally
+                {
+                    System.Security.Cryptography.CryptographicOperations.ZeroMemory(plain);
+                }
             }
-            using var writer = new StreamWriter(zip.CreateEntry("manifest.json").Open());
-            writer.Write(DeckJson.Serialize(manifest));
         }
         File.Move(tmp, full, overwrite: true);
         return manifest;
     }
 
-    /// <summary>Imports a bundle (.zip from <see cref="Export"/>) or a single profile .json file.</summary>
-    public BundleResult Import(string path, bool overwrite)
+    /// <summary>Imports a bundle (from <see cref="Export"/>, encrypted or not) or a single profile .json file.</summary>
+    /// <exception cref="PasswordRequiredException">The bundle is encrypted and no password was given.</exception>
+    /// <exception cref="WrongPasswordException">The password is wrong, or the bundle was changed.</exception>
+    public BundleResult Import(string path, bool overwrite, string? password = null)
+    {
+        if (!BundleCrypto.IsEncrypted(path)) return ImportFile(path, overwrite);
+        if (password is null) throw new PasswordRequiredException(path);
+
+        var plain = BundleCrypto.Decrypt(File.ReadAllBytes(path), password);
+        try
+        {
+            using var zip = new ZipArchive(new MemoryStream(plain), ZipArchiveMode.Read);
+            return ImportArchive(zip, path, overwrite);
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(plain);
+        }
+    }
+
+    BundleResult ImportFile(string path, bool overwrite)
     {
         var result = new BundleResult([], [], []);
         if (path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
             var profile = DeckJson.Read<Profile>(path);
             if (!ProfileStore.IsValidName(profile.Name)) profile.Name = Path.GetFileNameWithoutExtension(path);
-            ImportProfile(profile, []);
+            ImportProfile(result, profile, [], overwrite);
             return result;
         }
 
         using var zip = ZipFile.OpenRead(path);
+        return ImportArchive(zip, path, overwrite);
+    }
+
+    BundleResult ImportArchive(ZipArchive zip, string path, bool overwrite)
+    {
+        var result = new BundleResult([], [], []);
         var manifestEntry = zip.GetEntry("manifest.json") ?? throw new DeckException($"{path} is not an EnvDeck bundle.");
         var manifest = DeckJson.Deserialize<BundleManifest>(ReadEntry(manifestEntry));
         if (manifest.Format != "envdeck-bundle") throw new DeckException($"{path} is not an EnvDeck bundle.");
@@ -752,7 +817,7 @@ public sealed class DeckService
                 .Where(x => x.Match.Success)
                 .Select(x => (int.Parse(x.Match.Groups[1].Value), ReadEntry(x.Entry)))
                 .ToList();
-            ImportProfile(profile, history);
+            ImportProfile(result, profile, history, overwrite);
         }
 
         foreach (var entry in zip.Entries.Where(e => e.FullName.StartsWith("backups/", StringComparison.Ordinal) && e.Name.EndsWith(".json")))
@@ -765,31 +830,31 @@ public sealed class DeckService
             result.Backups.Add(id);
         }
         return result;
+    }
 
-        void ImportProfile(Profile profile, List<(int, string)> history)
+    void ImportProfile(BundleResult result, Profile profile, List<(int, string)> history, bool overwrite)
+    {
+        if (!Profiles.Exists(profile.Name))
         {
-            if (!Profiles.Exists(profile.Name))
-            {
-                if (profile.Version < 1) profile.Version = 1;
-                Profiles.ImportWithHistory(profile, history);
-                result.Imported.Add(profile.Name);
-            }
-            else if (overwrite)
-            {
-                Profiles.Save(profile);
-                result.Imported.Add(profile.Name);
-            }
-            else
-            {
-                result.Skipped.Add(profile.Name);
-            }
+            if (profile.Version < 1) profile.Version = 1;
+            Profiles.ImportWithHistory(profile, history);
+            result.Imported.Add(profile.Name);
         }
+        else if (overwrite)
+        {
+            Profiles.Save(profile);
+            result.Imported.Add(profile.Name);
+        }
+        else
+        {
+            result.Skipped.Add(profile.Name);
+        }
+    }
 
-        static string ReadEntry(ZipArchiveEntry entry)
-        {
-            using var reader = new StreamReader(entry.Open());
-            return reader.ReadToEnd();
-        }
+    static string ReadEntry(ZipArchiveEntry entry)
+    {
+        using var reader = new StreamReader(entry.Open());
+        return reader.ReadToEnd();
     }
 
     // ---------------------------------------------------------------- helpers

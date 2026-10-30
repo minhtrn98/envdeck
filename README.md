@@ -18,8 +18,12 @@ in the meantime.
 - **Group related** — one button puts similar names next to each other (`redis_url`, `redis_pw`, `acc_redis`:
   names are split on `_`, `__` and `-`, earlier parts count more); tables also sort by Name / Value.
 - **Backup & restore** — automatic backup before every change, manual snapshots, restore with preview.
-- **Move machines / reinstall Windows** — export everything (profiles + history + backups) into one `.zip`,
-  import on the new machine; `--portable` capture turns `C:\Users\you\...` into `%USERPROFILE%\...`.
+- **Secrets stay hidden** — values of variables that look like secrets (`*_PASSWORD`, `*_TOKEN`, `*ApiKey`,
+  `ConnectionStrings__*`...) are masked in every table, search/compare result and preview; an eye button shows one,
+  the context menu marks or unmarks a name, and a copied secret is wiped from the clipboard after 30 s.
+- **Move machines / reinstall Windows** — export everything (profiles + history + backups) into one
+  password-protected `.envdeck` file (AES-256-GCM, PBKDF2-SHA256; a forgotten password cannot be recovered; a plain
+  `.zip` is still possible but unencrypted), import on the new machine; `--portable` capture turns `C:\Users\you\...` into `%USERPROFILE%\...`.
 - **Search** variables by name/value (text or regex) across profiles, the live environment and backups.
 - **Compare** profiles, versions, the live environment and backups, entry by entry for `PATH`.
 - **Doctor** — missing or duplicate `PATH` folders, broken profiles, profiles that drifted.

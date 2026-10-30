@@ -36,6 +36,7 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         Service = DeckService.CreateDefault();
+        Secrecy.Use(Service);
         Loc.Instance.SetLanguage(Service.Settings.Language);
         Status = L.T("Ready");
         Profiles = new ProfilesViewModel(this);
@@ -101,6 +102,7 @@ public partial class MainViewModel : ObservableObject
     public void ReloadService()
     {
         Service = DeckService.CreateDefault();
+        Secrecy.Use(Service);
         OnPropertyChanged(nameof(Title));
         ReloadAll();
     }

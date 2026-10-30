@@ -239,6 +239,12 @@ public sealed class DeckSettings
 
     /// <summary>UI language of the desktop app ("en", "vi"); null follows Windows.</summary>
     public string? Language { get; set; }
+
+    /// <summary>Names the user marked as secret although they do not look like one (values are masked in the UI).</summary>
+    public List<string> SecretNames { get; set; } = [];
+
+    /// <summary>Names that look like secrets but the user marked as plain.</summary>
+    public List<string> PlainNames { get; set; } = [];
 }
 
 public sealed class BundleManifest
