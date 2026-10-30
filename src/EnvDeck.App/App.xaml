@@ -13,7 +13,7 @@
         <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI</FontFamily>
 
         <!-- DataGrid cells: the default column styles leave text at the top of the row with almost no padding.
-             Column headers get the same left padding (GridHeader) so titles line up with the values. -->
+             Each window's implicit DataGridColumnHeader style gives headers the same padding so titles line up. -->
         <Thickness x:Key="CellPadding">10,6,10,6</Thickness>
         <Style x:Key="CellText" TargetType="TextBlock" BasedOn="{x:Static DataGridTextColumn.DefaultElementStyle}">
             <Setter Property="VerticalAlignment" Value="Center" />
