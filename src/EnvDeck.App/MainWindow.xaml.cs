@@ -56,6 +56,26 @@ public partial class MainWindow : Window
             _vm.Profiles.ToggleActiveCommand.Execute(item);
     }
 
+    // ---------------------------------------------------------------- sorting
+
+    /// <summary>Header clicks cycle ascending, descending, unsorted (WPF alone would go ascending again).</summary>
+    void Grid_Sorting(object sender, DataGridSortingEventArgs e)
+    {
+        if (e.Column.SortDirection != ListSortDirection.Descending) return;
+        var grid = (DataGrid)sender;
+        e.Handled = true;
+        grid.Items.SortDescriptions.Clear();
+        foreach (var column in grid.Columns) column.SortDirection = null;
+    }
+
+    /// <summary>Sorting only changes how rows are shown, so moving a row while sorted would look like it did nothing.</summary>
+    bool RejectIfSorted(DataGrid grid)
+    {
+        if (grid.Items.SortDescriptions.Count == 0) return false;
+        _vm.Status = L.T("SortedNoReorder");
+        return true;
+    }
+
     // ---------------------------------------------------------------- reorder rows (profile variables, list entries)
 
     const string DragFormat = "EnvDeck.Row";
@@ -77,6 +97,7 @@ public partial class MainWindow : Window
             return;
 
         _dragCandidate = null;
+        if (RejectIfSorted(grid)) return;
         // Moving items is not allowed while a cell is being edited.
         grid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
         grid.SelectedItem = item;
@@ -125,6 +146,7 @@ public partial class MainWindow : Window
     void VariablesGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers != ModifierKeys.Alt || e.SystemKey is not (Key.Up or Key.Down)) return;
+        if (RejectIfSorted(VariablesGrid)) { e.Handled = true; return; }
         VariablesGrid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
         var command = e.SystemKey == Key.Up ? _vm.Profiles.MoveUpCommand : _vm.Profiles.MoveDownCommand;
         command.Execute(null);

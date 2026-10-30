@@ -10,6 +10,7 @@
         <!-- Column titles line up with the cell padding (CellPadding in App.xaml). -->
         <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
             <Setter Property="Padding" Value="10,0,10,0" />
+            <Setter Property="Template" Value="{StaticResource ColumnHeaderTemplate}" />
         </Style>
     </Window.Resources>
 

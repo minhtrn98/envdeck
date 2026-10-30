@@ -15,6 +15,50 @@
         <!-- DataGrid cells: the default column styles leave text at the top of the row with almost no padding.
              Each window's implicit DataGridColumnHeader style gives headers the same padding so titles line up. -->
         <Thickness x:Key="CellPadding">10,6,10,6</Thickness>
+        <Style x:Key="ColumnHeaderGripper" TargetType="Thumb">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="SizeWE" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>        <!-- Column header: the theme's template pins the sort arrow to the top edge. This one keeps the look (separators,
+             bottom rule, resizable columns) and centres a chevron vertically; it is applied by each window's implicit
+             DataGridColumnHeader style. -->
+        <ControlTemplate x:Key="ColumnHeaderTemplate" TargetType="DataGridColumnHeader">
+            <Grid>
+                <Border BorderBrush="#33808080" BorderThickness="0,0,0,1" Background="{TemplateBinding Background}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        <TextBlock x:Name="SortGlyph" Grid.Column="1" Visibility="Collapsed" Margin="0,3,10,0"
+                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <Rectangle HorizontalAlignment="Right" Width="1" Fill="#33808080" />
+                <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Style="{StaticResource ColumnHeaderGripper}" />
+                <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Style="{StaticResource ColumnHeaderGripper}" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="SortDirection" Value="Ascending">
+                    <Setter TargetName="SortGlyph" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="SortGlyph" Property="Text" Value="&#xE70E;" />
+                </Trigger>
+                <Trigger Property="SortDirection" Value="Descending">
+                    <Setter TargetName="SortGlyph" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="SortGlyph" Property="Text" Value="&#xE70D;" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
         <Style x:Key="CellText" TargetType="TextBlock" BasedOn="{x:Static DataGridTextColumn.DefaultElementStyle}">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -80,7 +124,7 @@
                                                       ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                                       ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Margin="0,2,0,0"
                                                Opacity="0.7" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                 </Grid>
                             </ToggleButton>

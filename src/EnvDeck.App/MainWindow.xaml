@@ -51,6 +51,7 @@
         <!-- Column titles line up with the cell padding (CellPadding in App.xaml). -->
         <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
             <Setter Property="Padding" Value="10,0,10,0" />
+            <Setter Property="Template" Value="{StaticResource ColumnHeaderTemplate}" />
         </Style>
         <Style x:Key="Hint" TargetType="TextBlock">
             <Setter Property="Opacity" Value="0.7" />
@@ -345,7 +346,7 @@
                         <DataGrid x:Name="VariablesGrid" Grid.Row="3" ItemsSource="{Binding Editor.Variables}"
                                   SelectedItem="{Binding SelectedVariable}" SelectionMode="Single"
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                  CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column"
+                                  CanUserReorderColumns="False" HeadersVisibility="Column" Sorting="Grid_Sorting"
                                   AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
                                   PreviewKeyDown="VariablesGrid_PreviewKeyDown">
                             <DataGrid.Columns>
@@ -355,7 +356,7 @@
                                             <Border Background="Transparent" Cursor="SizeNS" ToolTip="{l:Tr DragToReorder}"
                                                     PreviewMouseLeftButtonDown="Grip_PreviewMouseLeftButtonDown"
                                                     PreviewMouseMove="Grip_PreviewMouseMove">
-                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55"
+                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55" Margin="0,2,0,0"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                         </DataTemplate>
@@ -392,8 +393,6 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColNote}" Width="150"
-                                                    Binding="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
                             </DataGrid.Columns>
                         </DataGrid>
 
@@ -507,7 +506,7 @@
                     </DockPanel>
                     <DataGrid Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                              SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit">
+                              SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting">
                         <DataGrid.InputBindings>
                             <KeyBinding Key="Delete" Command="{Binding DeleteVariableCommand}" />
                         </DataGrid.InputBindings>
@@ -539,7 +538,7 @@
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                     Background="Transparent" ToolTip="{Binding StateTip}">
-                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12" Margin="0,3,0,0"
                                                        VerticalAlignment="Center" Style="{StaticResource LockGlyph}" />
                                             <TextBlock Text="{Binding Marker}" Style="{StaticResource PendingMarker}" />
                                         </StackPanel>
@@ -547,7 +546,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
-                            <DataGridTemplateColumn Header="{l:Tr ColScope}" Width="100" SortMemberPath="Scope">
+                            <DataGridTemplateColumn Header="{l:Tr ColScope}" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox Style="{StaticResource EnvCellCombo}" ItemsSource="{x:Static vm:Options.Scopes}" IsEnabled="{Binding CanEditScope}"
@@ -560,7 +559,7 @@
                             <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Width="*"
                                                 SortMemberPath="Value" Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
                             <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
-                            <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140" SortMemberPath="Kind">
+                            <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox Style="{StaticResource EnvCellCombo}" ItemsSource="{x:Static vm:Options.Kinds}" IsEnabled="{Binding CanEditKind}"
@@ -598,10 +597,10 @@
                                             <Border Background="Transparent" Cursor="SizeNS" Style="{StaticResource EntryGrip}"
                                                     PreviewMouseLeftButtonDown="Grip_PreviewMouseLeftButtonDown"
                                                     PreviewMouseMove="Grip_PreviewMouseMove">
-                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55"
+                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55" Margin="0,2,0,0"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
-                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12" Margin="0,3,0,0"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}" />
                                         </Grid>
