@@ -305,6 +305,76 @@ public sealed class DeckService
         static string? RemoveEntry(string? value, string entry) => value is null ? null : PathList.Remove(value, [entry]);
     }
 
+    // ---------------------------------------------------------------- direct edits
+
+    public EnvOwnership GetOwnership()
+    {
+        var ownership = new EnvOwnership();
+        foreach (var applied in State.Load().Applied)
+        foreach (var c in applied.Changes)
+        {
+            var entries = (c.RequestedEntries ?? []).Concat(c.AddedEntries ?? []).ToList();
+            if (entries.Count == 0) ownership.SetWhole(c.Scope, c.Name, applied.Profile);
+            else foreach (var e in entries) ownership.AddEntry(c.Scope, c.Name, e, applied.Profile);
+        }
+        return ownership;
+    }
+
+    /// <summary>
+    /// Writes edits straight to the environment (like the Windows dialog, but checked): variables and list
+    /// entries that a profile which is on manages are refused, as is anything changed outside since the editor
+    /// loaded it. A backup is taken first.
+    /// </summary>
+    public OperationResult ApplyDirect(IReadOnlyList<DirectChange> edits, bool dryRun = false)
+    {
+        var ownership = GetOwnership();
+        var result = new OperationResult("environment", 0, dryRun);
+        var seen = new HashSet<(EnvScope, string)>();
+        foreach (var e in edits)
+        {
+            if (string.IsNullOrWhiteSpace(e.Name) || e.Name.Contains('=') || e.Name.Trim() != e.Name)
+                throw new DeckException($"Invalid variable name '{e.Name}'.");
+            if (!seen.Add((e.Scope, e.Name.ToUpperInvariant())))
+                throw new DeckException($"{e.Scope}\\{e.Name} is listed twice.");
+            if (ownership.WholeOwner(e.Scope, e.Name) is { } owner)
+                throw new DeckException($"{e.Scope}\\{e.Name} is set by profile '{owner}', which is on; edit the profile instead.");
+
+            var current = Env.Get(e.Scope, e.Name);
+            if (e.IsNew && current is not null)
+                throw new DeckException($"{e.Scope}\\{e.Name} already exists.");
+            if (!e.IsNew && current?.Value != e.OriginalValue)
+                throw new DeckException($"{e.Scope}\\{e.Name} was changed outside EnvDeck since it was loaded; refresh and try again.");
+
+            var currentEntries = PathList.Split(current?.Value);
+            var newEntries = PathList.Split(e.Value);
+            foreach (var (entry, profile) in ownership.OwnedEntries(e.Scope, e.Name))
+            {
+                if (PathList.Contains(currentEntries, entry) && !PathList.Contains(newEntries, entry))
+                    throw new DeckException($"'{entry}' in {e.Scope}\\{e.Name} belongs to profile '{profile}', which is on.");
+            }
+
+            var kind = e.Value is null ? (ValueKind?)null : e.Kind ?? ChangePlanner.AutoKind(e.Value);
+            var change = new PlannedChange(e.Scope, current?.Name ?? e.Name, current?.Value, current?.Kind, e.Value, kind, []);
+            if (!change.IsNoOp) result.Changes.Add(change);
+        }
+
+        var scopes = result.Changes.Select(c => c.Scope).Distinct().ToList();
+        EnsureWritable(scopes);
+        if (dryRun || result.Changes.Count == 0) return result;
+
+        if (Settings.AutoBackup)
+            result.BackupId = Backups.Create(Env, scopes, null, "before editing the environment", auto: true, State.Load()).Id;
+        try
+        {
+            foreach (var change in result.Changes) Write(change);
+        }
+        finally
+        {
+            Env.NotifyChanged();
+        }
+        return result;
+    }
+
     /// <summary>
     /// Variables that turning <paramref name="profile"/> on would overwrite (Set/Remove) while another profile that
     /// is on has set them to something else. Profiles of the same group do not count: they are turned off first.
