@@ -39,6 +39,6 @@ jobs:
     steps:
       - uses: vedantmgoyal9/winget-releaser@main
         with:
-          identifier: MinhTran.EnvDeck
+          identifier: minhtrn98.EnvDeck
           installers-regex: '-setup\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}

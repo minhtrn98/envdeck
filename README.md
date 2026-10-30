@@ -26,7 +26,7 @@ in the meantime.
 ## Install
 
 ```powershell
-winget install MinhTran.EnvDeck      # once published; pulls in the .NET 10 Desktop Runtime
+winget install minhtrn98.EnvDeck     # once published; pulls in the .NET 10 Desktop Runtime
 ```
 
 Or download the installer / portable zip from the Releases page. The installer is per-user (no admin prompt)
@@ -146,14 +146,15 @@ packaging/         Inno Setup script and winget manifest templates
 
 ## Publishing to winget
 
-1. Push a tag (`git tag v0.1.0 && git push --tags`); the Release workflow builds the zip and the x64/arm64
-   installers and creates the GitHub release.
-2. First submission: `winget install wingetcreate`, then
-   `wingetcreate new https://github.com/minhtrn98/envdeck/releases/download/v0.1.0/EnvDeck-0.1.0-win-x64-setup.exe`
-   (or fill in the templates in `packaging/winget` with the SHA256 values and open a PR on
-   `microsoft/winget-pkgs`).
-3. Later releases: set the repository variable `WINGET_ENABLED=true` and the secret `WINGET_TOKEN`; the workflow
-   opens the winget PR for you.
+The package is `minhtrn98.EnvDeck`; `packaging/winget` holds the manifests of the version submitted to
+`microsoft/winget-pkgs`. The installer manifest must keep `Dependencies` (.NET 10 Desktop Runtime): winget runs
+the installer silently, so the installer's own runtime check cannot warn the user.
+
+1. Bump `<Version>` in `Directory.Build.props`, then push a tag (`git tag v0.1.2 && git push --tags`); the Release
+   workflow builds the zip and the x64/arm64 installers and creates the GitHub release.
+2. Later releases, once the first version is merged: set the repository variable `WINGET_ENABLED=true` and the
+   secret `WINGET_TOKEN`; the workflow opens the winget PR for you (it copies the previous manifests, so the
+   dependency carries over).
 
 ## Installing with Scoop
 
