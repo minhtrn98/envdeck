@@ -287,7 +287,7 @@ public partial class ProfilesViewModel : ObservableObject
             }, L.T(active ? "DeletedProfileTurnedOff" : "DeletedProfile", name)))
         {
             Reload();
-            if (active) _main.CurrentEnv.Refresh();
+            if (active) _main.CurrentEnv.RefreshIfClean();
         }
     }
 
@@ -337,7 +337,7 @@ public partial class ProfilesViewModel : ObservableObject
                                + (result.Warnings.Count > 0 ? $". {string.Join(" ", result.Warnings)}" : ".")
                                + " " + L.T("NewTerminalsSee");
             });
-            _main.CurrentEnv.Refresh();
+            _main.CurrentEnv.RefreshIfClean();
             _main.Backups.Refresh();
         }
         finally

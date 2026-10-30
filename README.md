@@ -13,6 +13,8 @@ in the meantime.
 - **PATH-aware** — `Prepend` / `Append` operations add entries to list variables instead of overwriting them.
 - **Versioned** — every save is a new version; diff any two versions and roll back. Hand edits made in another
   editor are picked up as new versions automatically.
+- **Edit the live environment** — add, edit, delete variables and `PATH` entries in place; changes wait for
+  *Apply* (preview + automatic backup). What a profile that is on manages is locked — edit it in the profile.
 - **Backup & restore** — automatic backup before every change, manual snapshots, restore with preview.
 - **Move machines / reinstall Windows** — export everything (profiles + history + backups) into one `.zip`,
   import on the new machine; `--portable` capture turns `C:\Users\you\...` into `%USERPROFILE%\...`.

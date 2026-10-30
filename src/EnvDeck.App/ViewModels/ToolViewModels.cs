@@ -10,83 +10,6 @@ using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
 
-// ------------------------------------------------------------------ current environment
-
-public sealed record EnvRow(EnvScope Scope, string Name, string Value, ValueKind Kind);
-
-public sealed record EntryRow(string Entry, string Expanded, bool Exists);
-
-public partial class EnvironmentViewModel : ObservableObject
-{
-    readonly MainViewModel _main;
-
-    public EnvironmentViewModel(MainViewModel main)
-    {
-        _main = main;
-        View = CollectionViewSource.GetDefaultView(Rows);
-        View.Filter = o => o is EnvRow r
-                           && (ScopeFilter == "All" || r.Scope.ToString() == ScopeFilter)
-                           && (string.IsNullOrWhiteSpace(Filter)
-                               || r.Name.Contains(Filter.Trim(), StringComparison.OrdinalIgnoreCase)
-                               || r.Value.Contains(Filter.Trim(), StringComparison.OrdinalIgnoreCase));
-    }
-
-    public ObservableCollection<EnvRow> Rows { get; } = [];
-
-    public ICollectionView View { get; }
-
-    /// <summary>Entries of the selected variable when it is a list (PATH...), with a check that each folder exists.</summary>
-    public ObservableCollection<EntryRow> Entries { get; } = [];
-
-    [ObservableProperty]
-    public partial string Filter { get; set; } = "";
-
-    [ObservableProperty]
-    public partial string ScopeFilter { get; set; } = "All";
-
-    [ObservableProperty]
-    public partial EnvRow? Selected { get; set; }
-
-    partial void OnFilterChanged(string value) => View.Refresh();
-
-    partial void OnScopeFilterChanged(string value) => View.Refresh();
-
-    partial void OnSelectedChanged(EnvRow? value)
-    {
-        Entries.Clear();
-        if (value is null) return;
-        var entries = PathList.Split(value.Value);
-        if (entries.Count < 2) return;
-        foreach (var e in entries)
-        {
-            var expanded = Environment.ExpandEnvironmentVariables(e).Trim('"');
-            Entries.Add(new EntryRow(e, expanded, Directory.Exists(expanded) || File.Exists(expanded)));
-        }
-    }
-
-    [RelayCommand]
-    public void Refresh()
-    {
-        var keep = Selected;
-        Rows.Clear();
-        _main.Run(() =>
-        {
-            foreach (var scope in Options.Scopes)
-            foreach (var v in _main.Service.Env.GetAll(scope))
-                Rows.Add(new EnvRow(scope, v.Name, v.Value, v.Kind));
-        });
-        Selected = keep is null ? null : Rows.FirstOrDefault(r => r.Scope == keep.Scope && r.Name == keep.Name);
-    }
-
-    [RelayCommand]
-    void CopyValue()
-    {
-        if (Selected is null) return;
-        Clipboard.SetText(Selected.Value);
-        _main.Status = L.T("CopiedValue", Selected.Name);
-    }
-}
-
 // ------------------------------------------------------------------ backups
 
 public sealed class BackupRow(EnvSnapshot s)
@@ -180,7 +103,7 @@ public partial class BackupsViewModel(MainViewModel main) : ObservableObject
             main.Status = $"{L.T("Restored", result.Changes.Count, id)} {string.Join(" ", result.Warnings)}";
         });
         Refresh();
-        main.CurrentEnv.Refresh();
+        main.CurrentEnv.RefreshIfClean();
         main.Profiles.RefreshActive();
     }
 

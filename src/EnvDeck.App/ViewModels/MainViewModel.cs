@@ -90,6 +90,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(Title));
         Status = L.T("Ready");
         Profiles.Reload();
+        CurrentEnv.RefreshTexts();
         Backups.Refresh();
         Compare.RefreshTexts();
         Search.RefreshTexts();
@@ -107,7 +108,7 @@ public partial class MainViewModel : ObservableObject
     public void ReloadAll()
     {
         Profiles.Reload();
-        CurrentEnv.Refresh();
+        CurrentEnv.RefreshIfClean();
         Backups.Refresh();
         Compare.RefreshSources();
         Settings.Load();

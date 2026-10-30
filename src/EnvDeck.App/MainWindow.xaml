@@ -94,6 +94,67 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Environment tab: padlock of a variable a profile that is on manages (dimmed when only some entries are). -->
+        <Style x:Key="LockGlyph" TargetType="TextBlock">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPartlyLocked}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Setter Property="Opacity" Value="0.5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Environment tab: + new, ● changed, − deleted (not applied yet). -->
+        <Style x:Key="PendingMarker" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="New">
+                    <Setter Property="Foreground" Value="#2E9E4F" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Modified">
+                    <Setter Property="Foreground" Value="#D98A00" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Deleted">
+                    <Setter Property="Foreground" Value="#D64545" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Environment tab: a variable marked for deletion is dimmed and struck through until Apply. -->
+        <Style x:Key="EnvCellText" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                    <Setter Property="Opacity" Value="0.45" />
+                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EnvCellCombo" TargetType="ComboBox" BasedOn="{StaticResource CellCombo}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                    <Setter Property="Opacity" Value="0.45" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Environment tab: list entries, orange when the folder does not exist; locked entries have no grip. -->
+        <Style x:Key="EntryText" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Exists}" Value="False">
+                    <Setter Property="Foreground" Value="#D98A00" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="EntryGrip" TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <!-- Colors the +/−/~ marker of a compare row. -->
         <Style x:Key="DiffSymbol" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="Bold" />
@@ -285,7 +346,7 @@
                                   SelectedItem="{Binding SelectedVariable}" SelectionMode="Single"
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column"
-                                  AllowDrop="True" DragOver="VariablesGrid_DragOver" Drop="VariablesGrid_Drop"
+                                  AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
                                   PreviewKeyDown="VariablesGrid_PreviewKeyDown">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Width="34" CanUserResize="False">
@@ -392,13 +453,16 @@
             </TabItem>
 
             <!-- ============================================================ ENVIRONMENT -->
+            <!-- Editable in place: edits stay pending until Apply (preview + backup). Variables and list entries that a
+                 profile which is on manages are locked (padlock) and can be opened in that profile instead. -->
             <TabItem Header="{l:Tr TabEnvironment}" DataContext="{Binding CurrentEnv}">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="170" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -410,33 +474,114 @@
                                   SelectedValuePath="Value" SelectedValue="{Binding ScopeFilter}" />
                         <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr EnvFilterTip}" />
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
-                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" HeadersVisibility="Column">
+                    <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="{l:Tr Discard}" Command="{Binding DiscardCommand}" MinWidth="80" Margin="6,0,0,0" />
+                            <Button Content="{Binding ApplyText}" Command="{Binding ApplyCommand}" MinWidth="110" Margin="6,0,0,0"
+                                    Style="{DynamicResource AccentButtonStyle}" ToolTip="{l:Tr EnvApplyTip}" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <Button Content="{l:Tr AddVariable}" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
+                            <Button Content="{l:Tr Delete}" Command="{Binding DeleteVariableCommand}" ToolTip="{l:Tr EnvDeleteTip}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" Text="{l:Tr EnvEditHint}" ToolTip="{l:Tr EnvEditHint}"
+                                   VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="12,0,0,0" />
+                    </DockPanel>
+                    <DataGrid Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                              AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                              SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit">
+                        <DataGrid.InputBindings>
+                            <KeyBinding Key="Delete" Command="{Binding DeleteVariableCommand}" />
+                        </DataGrid.InputBindings>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{l:Tr EditInProfile}" Command="{Binding EditInProfileCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE70F;" FontFamily="{StaticResource IconFont}" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="{l:Tr CopyValue}" Command="{Binding CopyValueCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource IconFont}" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem Header="{l:Tr Delete}" InputGestureText="Del" Command="{Binding DeleteVariableCommand}"
+                                          Foreground="{StaticResource DangerBrush}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}"
+                                                   Foreground="{StaticResource DangerBrush}" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                         <DataGrid.Columns>
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="90" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Binding="{Binding Name}" Width="240" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColKind}" Binding="{Binding Kind}" Width="140" />
+                            <DataGridTemplateColumn Width="48" CanUserResize="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Background="Transparent" ToolTip="{Binding StateTip}">
+                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                                       VerticalAlignment="Center" Style="{StaticResource LockGlyph}" />
+                                            <TextBlock Text="{Binding Marker}" Style="{StaticResource PendingMarker}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" Header="{l:Tr ColScope}" Width="100"
+                                                    SortMemberPath="Scope" ItemsSource="{x:Static vm:Options.Scopes}"
+                                                    SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColName}" Width="240"
+                                                SortMemberPath="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColValue}" Width="*"
+                                                SortMemberPath="Value" Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" Header="{l:Tr ColKind}" Width="140"
+                                                    SortMemberPath="Kind" ItemsSource="{x:Static vm:Options.Kinds}"
+                                                    SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
                         </DataGrid.Columns>
                     </DataGrid>
-                    <TextBlock Grid.Row="2" Style="{StaticResource Hint}" Margin="0,10,0,4" Text="{l:Tr EntriesHint}" />
-                    <ListBox Grid.Row="3" ItemsSource="{Binding Entries}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Entry}" ToolTip="{Binding Expanded}">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Exists}" Value="False">
-                                                    <Setter Property="Foreground" Value="#D98A00" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+
+                    <!-- Entries of the selected list variable (PATH...) -->
+                    <DockPanel Grid.Row="3" Margin="0,10,0,6" Visibility="{Binding ShowEntries, Converter={StaticResource BoolToVis}}">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="{l:Tr AddEntry}" Command="{Binding AddEntryCommand}" Margin="6,0,0,0" />
+                            <Button Content="{l:Tr RemoveEntry}" Command="{Binding RemoveEntryCommand}" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding EntriesTitle}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{l:Tr EntriesHint}" ToolTip="{l:Tr EntriesHint}"
+                                   VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                    <DataGrid x:Name="EntriesGrid" Grid.Row="4" Height="190" ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}"
+                              Visibility="{Binding ShowEntries, Converter={StaticResource BoolToVis}}"
+                              AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                              CanUserSortColumns="False" SelectionMode="Single" HeadersVisibility="None"
+                              AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
+                              BeginningEdit="EntriesGrid_BeginningEdit" PreviewKeyDown="EntriesGrid_PreviewKeyDown">
+                        <DataGrid.InputBindings>
+                            <KeyBinding Key="Delete" Command="{Binding RemoveEntryCommand}" />
+                        </DataGrid.InputBindings>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="34" CanUserResize="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid Background="Transparent" ToolTip="{Binding Tip}">
+                                            <Border Background="Transparent" Cursor="SizeNS" Style="{StaticResource EntryGrip}"
+                                                    PreviewMouseLeftButtonDown="Grip_PreviewMouseLeftButtonDown"
+                                                    PreviewMouseMove="Grip_PreviewMouseMove">
+                                                <TextBlock Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Opacity="0.55"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn ElementStyle="{StaticResource EntryText}" Width="*"
+                                                Binding="{Binding Text, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </TabItem>
 
