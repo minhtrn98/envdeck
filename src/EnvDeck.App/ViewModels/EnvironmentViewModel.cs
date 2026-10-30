@@ -387,7 +387,7 @@ public partial class EnvRowViewModel : ObservableObject
     public partial string Kind { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(State), nameof(Marker), nameof(StateTip))]
+    [NotifyPropertyChangedFor(nameof(State), nameof(Marker), nameof(StateTip), nameof(CanEditKind))]
     public partial bool IsDeleted { get; set; }
 
     public bool IsNew { get; }
@@ -407,6 +407,11 @@ public partial class EnvRowViewModel : ObservableObject
     public bool IsPartlyLocked => !IsLocked && EntryOwners is not null;
 
     public bool CanDelete => !IsLocked && !IsPartlyLocked;
+
+    /// <summary>The scope is fixed once a variable exists.</summary>
+    public bool CanEditScope => IsNew;
+
+    public bool CanEditKind => !IsLocked && !IsDeleted;
 
     public string? OwnerProfile => Owner ?? EntryOwners?.Split(", ")[0];
 

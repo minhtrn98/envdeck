@@ -361,20 +361,38 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColScope}" Width="100"
-                                                        ItemsSource="{x:Static vm:Options.Scopes}"
-                                                        SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColOp}" Width="100"
-                                                        ItemsSource="{x:Static vm:Options.Ops}"
-                                                        SelectedItemBinding="{Binding Op, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Width="190"
+                                <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
+                            <DataGridTemplateColumn Header="{l:Tr ColScope}" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox Style="{StaticResource CellCombo}" ItemsSource="{x:Static vm:Options.Scopes}"
+                                                  SelectedItem="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                                <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
+                            <DataGridTemplateColumn Header="{l:Tr ColOp}" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox Style="{StaticResource CellCombo}" ItemsSource="{x:Static vm:Options.Ops}"
+                                                  SelectedItem="{Binding Op, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Width="*"
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Width="*"
                                                     Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridComboBoxColumn ElementStyle="{StaticResource CellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColKind}" Width="140"
-                                                        ItemsSource="{x:Static vm:Options.Kinds}"
-                                                        SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColNote}" Width="150"
+                                <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
+                            <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox Style="{StaticResource CellCombo}" ItemsSource="{x:Static vm:Options.Kinds}"
+                                                  SelectedItem="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColNote}" Width="150"
                                                     Binding="{Binding Note, UpdateSourceTrigger=PropertyChanged}" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -409,11 +427,11 @@
                                               HeadersVisibility="Column"
                                               Visibility="{Binding IsPreviewSelected, Converter={StaticResource BoolToVis}}">
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAction}"
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColAction}"
                                                                 Binding="{Binding Action}" Width="140" MinWidth="125" />
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="200" />
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColBefore}" Binding="{Binding Before}" Width="*" />
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColAfter}" Binding="{Binding After}" Width="*" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <!-- Right-click a version to compare or roll back; double-click compares. -->
@@ -439,10 +457,10 @@
                                             </ContextMenu>
                                         </DataGrid.ContextMenu>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVersion}" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColSaved}" Width="200"
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColVersion}" Binding="{Binding Version, StringFormat=v{0}}" Width="90" />
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColSaved}" Width="200"
                                                                 Binding="{Binding SavedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" />
-                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariables}" Binding="{Binding VariableCount}" Width="*" />
+                                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColVariables}" Binding="{Binding VariableCount}" Width="*" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </Grid>
@@ -528,16 +546,28 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColScope}" Width="100"
-                                                    SortMemberPath="Scope" ItemsSource="{x:Static vm:Options.Scopes}"
-                                                    SelectedItemBinding="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColName}" Width="240"
+                            <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
+                            <DataGridTemplateColumn Header="{l:Tr ColScope}" Width="100" SortMemberPath="Scope">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox Style="{StaticResource EnvCellCombo}" ItemsSource="{x:Static vm:Options.Scopes}" IsEnabled="{Binding CanEditScope}"
+                                                  SelectedItem="{Binding Scope, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColName}" Width="240"
                                                 SortMemberPath="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" Header="{l:Tr ColValue}" Width="*"
+                            <DataGridTextColumn ElementStyle="{StaticResource EnvCellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Width="*"
                                                 SortMemberPath="Value" Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                            <DataGridComboBoxColumn ElementStyle="{StaticResource EnvCellCombo}" EditingElementStyle="{StaticResource CellComboEdit}" Header="{l:Tr ColKind}" Width="140"
-                                                    SortMemberPath="Kind" ItemsSource="{x:Static vm:Options.Kinds}"
-                                                    SelectedItemBinding="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
+                            <!-- A real ComboBox in the cell (not a combo column): one click opens it, and the row height never changes. -->
+                            <DataGridTemplateColumn Header="{l:Tr ColKind}" Width="140" SortMemberPath="Kind">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ComboBox Style="{StaticResource EnvCellCombo}" ItemsSource="{x:Static vm:Options.Kinds}" IsEnabled="{Binding CanEditKind}"
+                                                  SelectedItem="{Binding Kind, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -578,7 +608,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn ElementStyle="{StaticResource EntryText}" Width="*"
+                            <DataGridTextColumn ElementStyle="{StaticResource EntryText}" EditingElementStyle="{StaticResource CellTextEdit}" Width="*"
                                                 Binding="{Binding Text, UpdateSourceTrigger=PropertyChanged}" />
                         </DataGrid.Columns>
                     </DataGrid>
@@ -604,14 +634,14 @@
                     <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColId}" Binding="{Binding Id}" Width="170" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColCreated}" Binding="{Binding Created}" Width="190" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColType}" Binding="{Binding Type}" Width="100" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColNoteReason}" Binding="{Binding Description}" Width="*" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColUser}" Binding="{Binding UserCount}" Width="80" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColMachine}" Binding="{Binding MachineCount}" Width="100" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColHost}" Binding="{Binding Host}" Width="140" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColProfilesOn}" Binding="{Binding ActiveProfiles}" Width="200" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColId}" Binding="{Binding Id}" Width="170" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColCreated}" Binding="{Binding Created}" Width="190" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColType}" Binding="{Binding Type}" Width="100" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColNoteReason}" Binding="{Binding Description}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColUser}" Binding="{Binding UserCount}" Width="80" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColMachine}" Binding="{Binding MachineCount}" Width="100" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColHost}" Binding="{Binding Host}" Width="140" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColProfilesOn}" Binding="{Binding ActiveProfiles}" Width="200" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -647,10 +677,10 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="220" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColLeft}" Binding="{Binding Left}" Width="*" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColRight}" Binding="{Binding Right}" Width="*" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColListEntries}" Binding="{Binding Details}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="220" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColLeft}" Binding="{Binding Left}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColRight}" Binding="{Binding Right}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColListEntries}" Binding="{Binding Details}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -680,9 +710,9 @@
                     <DataGrid x:Name="SearchGrid" ItemsSource="{Binding Results}" AutoGenerateColumns="False"
                               IsReadOnly="True" HeadersVisibility="Column" MouseDoubleClick="SearchGrid_MouseDoubleClick">
                         <DataGrid.Columns>
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColSource}" Binding="{Binding Source}" Width="200" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="240" />
-                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColSource}" Binding="{Binding Source}" Width="200" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColVariable}" Binding="{Binding Variable}" Width="240" />
+                            <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColValue}" Binding="{Binding Value}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
