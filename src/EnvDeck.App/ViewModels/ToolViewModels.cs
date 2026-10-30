@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -80,41 +79,12 @@ public partial class EnvironmentViewModel : ObservableObject
     }
 
     [RelayCommand]
-    void Capture(IList? selected)
-    {
-        var rows = selected?.OfType<EnvRow>().ToList() ?? [];
-        if (rows.Count == 0)
-        {
-            Dialogs.Info(L.T("NothingSelected"), L.T("CaptureSelectBody"));
-            return;
-        }
-        var target = Dialogs.Prompt(L.T("CaptureTitle"), L.T("CaptureLabel", rows.Count),
-            _main.Profiles.Selected?.Name ?? "",
-            _main.Profiles.Items.Select(p => p.Name));
-        if (target is null) return;
-        var answer = Dialogs.Ask(L.T("PortableHeading"), L.T("PortableBody"), L.T("MakePortable"), L.T("KeepAsIs"));
-        if (answer == DialogChoice.Cancel) return;
-        var portable = answer == DialogChoice.Primary;
-
-        _main.Run(() =>
-        {
-            var (profile, warnings) = _main.Service.Capture(target, rows.Select(r => (r.Scope, r.Name)), portable);
-            _main.Status = L.T("Captured", rows.Count - warnings.Count, profile.Name, profile.Version);
-            _main.Profiles.Reload(profile.Name);
-            _main.SelectedTab = Tabs.Profiles;
-        });
-    }
-
-    [RelayCommand]
     void CopyValue()
     {
         if (Selected is null) return;
         Clipboard.SetText(Selected.Value);
         _main.Status = L.T("CopiedValue", Selected.Name);
     }
-
-    [RelayCommand]
-    void Backup() => _main.Backups.CreateCommand.Execute(null);
 }
 
 // ------------------------------------------------------------------ backups

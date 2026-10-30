@@ -402,11 +402,7 @@
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="{l:Tr CaptureSelected}" Command="{Binding CaptureCommand}"
-                                    CommandParameter="{Binding SelectedItems, ElementName=EnvGrid}"
-                                    Style="{DynamicResource AccentButtonStyle}" Margin="8,0,0,0" />
-                            <Button Content="{l:Tr CopyValue}" Command="{Binding CopyValueCommand}" Margin="6,0,0,0" />
-                            <Button Content="{l:Tr BackupNow}" Command="{Binding BackupCommand}" Margin="6,0,0,0" />
+                            <Button Content="{l:Tr CopyValue}" Command="{Binding CopyValueCommand}" Margin="8,0,0,0" />
                             <Button Content="{l:Tr Refresh}" Command="{Binding RefreshCommand}" Margin="6,0,0,0" />
                         </StackPanel>
                         <ComboBox DockPanel.Dock="Left" Width="120" Margin="0,0,8,0"
@@ -414,8 +410,8 @@
                                   SelectedValuePath="Value" SelectedValue="{Binding ScopeFilter}" />
                         <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:Tr EnvFilterTip}" />
                     </DockPanel>
-                    <DataGrid x:Name="EnvGrid" Grid.Row="1" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
-                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" HeadersVisibility="Column">
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" HeadersVisibility="Column">
                         <DataGrid.Columns>
                             <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColScope}" Binding="{Binding Scope}" Width="90" />
                             <DataGridTextColumn ElementStyle="{StaticResource CellText}" Header="{l:Tr ColName}" Binding="{Binding Name}" Width="240" />

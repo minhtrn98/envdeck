@@ -54,8 +54,8 @@ static class Strings
 
         // ---------------------------------------------------------------- profiles: editor
         ["NoProfileSelected"] = ("No profile selected", "Chưa chọn profile"),
-        ["NoProfileHint"] = ("Create one with New profile, or capture existing variables from the Environment tab.",
-            "Tạo bằng nút Profile mới, hoặc lấy các biến có sẵn từ tab Môi trường."),
+        ["NoProfileHint"] = ("Create one with New profile, then add variables yourself or with From environment…",
+            "Tạo bằng nút Profile mới, rồi tự thêm biến hoặc dùng nút Từ môi trường…"),
         ["Unsaved"] = ("● unsaved", "● chưa lưu"),
         ["EditorSavedAt"] = ("saved {0}", "lưu lúc {0}"),
         ["OnBadge"] = ("ON", "BẬT"),
@@ -152,7 +152,6 @@ static class Strings
         ["AlreadyMatchesVersion"] = ("'{0}' already matches v{1}.", "'{0}' đã giống v{1}."),
 
         // ---------------------------------------------------------------- environment
-        ["CaptureSelected"] = ("Capture selected → profile", "Lưu biến đã chọn → profile"),
         ["CopyValue"] = ("Copy value", "Sao chép giá trị"),
         ["BackupNow"] = ("Backup now", "Sao lưu ngay"),
         ["EnvFilterTip"] = ("Filter by name or value", "Lọc theo tên hoặc giá trị"),
@@ -161,15 +160,6 @@ static class Strings
         ["ScopeAll"] = ("All", "Tất cả"),
         ["ScopeUser"] = ("User", "User"),
         ["ScopeMachine"] = ("Machine", "Machine"),
-        ["CaptureSelectBody"] = ("Select one or more variables to capture (Ctrl+click for several).", "Chọn một hoặc nhiều biến để lưu (Ctrl+click để chọn nhiều)."),
-        ["CaptureTitle"] = ("Capture into profile", "Lưu vào profile"),
-        ["CaptureLabel"] = ("Copy {0} variable(s) into profile (new or existing):", "Chép {0} biến vào profile (mới hoặc có sẵn):"),
-        ["PortableHeading"] = ("Make paths portable?", "Chuyển đường dẫn sang dạng portable?"),
-        ["PortableBody"] = ("C:\\Users\\you\\... becomes %USERPROFILE%\\..., so the profile also works on another machine or account.",
-            "C:\\Users\\bạn\\... thành %USERPROFILE%\\..., để profile dùng được trên máy hoặc tài khoản khác."),
-        ["MakePortable"] = ("Make portable", "Chuyển sang portable"),
-        ["KeepAsIs"] = ("Keep as is", "Giữ nguyên"),
-        ["Captured"] = ("Captured {0} variable(s) into '{1}' (v{2}).", "Đã lưu {0} biến vào '{1}' (v{2})."),
         ["CopiedValue"] = ("Copied the value of {0}.", "Đã sao chép giá trị của {0}."),
 
         // ---------------------------------------------------------------- backups
