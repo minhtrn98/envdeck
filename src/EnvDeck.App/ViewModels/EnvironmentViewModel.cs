@@ -158,13 +158,16 @@ public partial class EnvironmentViewModel : ObservableObject
         PendingChanged();
     }
 
-    bool CanDelete() => Selected is { CanDelete: true };
+    bool CanDelete(EnvRowViewModel? row) => (row ?? Selected) is { CanDelete: true };
 
-    /// <summary>Marks the selected variable for deletion (again: unmarks it); a new row is just dropped.</summary>
+    /// <summary>
+    /// Marks a variable for deletion (again: unmarks it); a new row is just dropped. The trash button of a row passes
+    /// that row; the Delete key and the context menu act on the selected one.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanDelete))]
-    void DeleteVariable()
+    void DeleteVariable(EnvRowViewModel? target)
     {
-        if (Selected is not { } row) return;
+        if ((target ?? Selected) is not { } row) return;
         if (row.IsNew)
         {
             row.Changed -= OnRowChanged;
@@ -303,12 +306,12 @@ public partial class EnvironmentViewModel : ObservableObject
         SelectedEntry = entry;
     }
 
-    bool CanRemoveEntry() => SelectedEntry is { IsLocked: false };
+    bool CanRemoveEntry(EnvEntryViewModel? entry) => (entry ?? SelectedEntry) is { IsLocked: false };
 
     [RelayCommand(CanExecute = nameof(CanRemoveEntry))]
-    void RemoveEntry()
+    void RemoveEntry(EnvEntryViewModel? target)
     {
-        if (SelectedEntry is not { IsLocked: false } entry) return;
+        if ((target ?? SelectedEntry) is not { IsLocked: false } entry) return;
         entry.PropertyChanged -= OnEntryChanged;
         Entries.Remove(entry);
     }

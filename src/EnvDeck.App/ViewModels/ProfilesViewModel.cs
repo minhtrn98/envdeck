@@ -387,11 +387,13 @@ public partial class ProfilesViewModel : ObservableObject
         _main.Status = L.T("AddedFromEnv", window.Result.Count, editor.Name);
     }
 
+    /// <summary>The trash button of a row passes that row; without one, the selected row goes.</summary>
     [RelayCommand]
-    void RemoveVariable()
+    void RemoveVariable(VariableViewModel? row)
     {
-        if (Editor is null || SelectedVariable is null) return;
-        Editor.Variables.Remove(SelectedVariable);
+        row ??= SelectedVariable;
+        if (Editor is null || row is null) return;
+        Editor.Variables.Remove(row);
     }
 
     [RelayCommand]
