@@ -1,0 +1,49 @@
+# EnvDeck — notes for coding agents
+
+Windows environment-variable profile manager: `src/EnvDeck.Core` (logic), `src/EnvDeck.Cli` (`envdeck`),
+`src/EnvDeck.App` (WPF, Fluent, MVVM), `tests/EnvDeck.Core.Tests` (xUnit). .NET 10.
+
+## Safety first (read before running anything)
+
+- **Never touch the real environment.** Every manual or UI test must set `ENVDECK_SANDBOX=1`
+  (writes to `HKCU\Software\EnvDeck\Sandbox`) and `ENVDECK_HOME=<temp folder>`. Delete both afterwards.
+- Unit tests use `TestDeck` (in-memory store); keep new Core tests on it.
+- Do not try to add Defender exclusions or disable security policy. New unsigned exes are blocked outside
+  `D:\TMS`, so Debug builds use `UseAppHost=false`: run `dotnet EnvDeck.App.dll`, not an exe.
+- If the user's EnvDeck is running from `bin\Debug`, build to a temp folder (`dotnet build -o D:\Temp\x`).
+  Never kill their process.
+- Do not commit, push, tag or open PRs unless asked.
+
+## Checks that must pass
+
+```
+dotnet build EnvDeck.slnx          # 0 warnings, 0 errors
+dotnet test tests/EnvDeck.Core.Tests
+```
+
+Every key in `src/EnvDeck.App/Localization/Strings.cs` needs English **and** Vietnamese, no duplicates,
+no key used in XAML/code that is missing from the table.
+
+## Code conventions
+
+- Core: no UI types. Behaviour changes get a test. Writes to the environment go through `DeckService`
+  (auto backup, apply journal in `state.json`, elevation check for Machine scope).
+- App/MVVM: CommunityToolkit.Mvvm 8.4 with **partial properties** (`[ObservableProperty] public partial T X { get; set; }`),
+  `[RelayCommand(CanExecute = ...)]`.
+- All user-visible text goes through `Loc`: `{l:Tr Key}` in XAML, `L.T("Key", args)` in code; text built
+  in code must be refreshed in the view model's `RefreshTexts()` on language change.
+- Dialogs: use `Dialogs.Confirm/ConfirmDanger/Ask/Info/Error`, never `MessageBox`.
+- DataGrid cells use the shared `CellText` / `CellCombo` styles (App.xaml). Do **not** set a `RowStyle`
+  `BasedOn="{x:Type DataGridRow}"` — it rendered rows with a white background in Fluent theme; style cells instead.
+- Font is Segoe UI. Keep the existing comment density: short `///` summaries that explain *why*.
+- Keep keyboard/accessibility parity (e.g. Alt+Up/Down as the alternative to dragging).
+
+## Testing the UI
+
+Drive the window with UI Automation against a sandboxed instance; prefer reading cell text over screenshots.
+Only capture a screenshot after confirming EnvDeck is the foreground window (never other apps).
+
+## Commits
+
+Conventional Commits (`feat(app): ...`), body explains *why*, atomic commits, verify each builds.
+Add the `Co-Authored-By` trailer for the agent that wrote it.
