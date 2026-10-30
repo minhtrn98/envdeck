@@ -15,7 +15,7 @@ public sealed class OperationResult(string target, int version, bool dryRun)
     /// <summary>Changes made (or, for a dry run, that would be made) for <see cref="Target"/>.</summary>
     public List<PlannedChange> Changes { get; } = [];
 
-    /// <summary>Profiles turned off first: the same profile being re-applied, or others in the same group.</summary>
+    /// <summary>Profiles turned off first when re-applying the same profile.</summary>
     public List<string> TurnedOff { get; } = [];
 
     public List<PlannedChange> TurnOffChanges { get; } = [];
@@ -144,9 +144,7 @@ public sealed class DeckService
         var state = State.Load();
         var result = new OperationResult(profile.Name, profile.Version, dryRun);
 
-        var turnOff = state.Applied
-            .Where(a => Same(a.Profile, profile.Name) || (!string.IsNullOrEmpty(profile.Group) && Same(a.Group, profile.Group)))
-            .ToList();
+        var turnOff = state.Applied.Where(a => Same(a.Profile, profile.Name)).ToList();
         var scopes = profile.Variables.Select(v => v.Scope)
             .Concat(turnOff.SelectMany(a => a.Changes).Select(c => c.Scope))
             .Distinct().ToList();
@@ -179,7 +177,6 @@ public sealed class DeckService
             {
                 Profile = profile.Name,
                 Version = profile.Version,
-                Group = string.IsNullOrEmpty(profile.Group) ? null : profile.Group,
                 AppliedAt = DateTimeOffset.Now,
             };
             state.Applied.Add(entry);
@@ -394,14 +391,11 @@ public sealed class DeckService
 
     /// <summary>
     /// Variables that turning <paramref name="profile"/> on would overwrite (Set/Remove) while another profile that
-    /// is on has set them to something else. Profiles of the same group do not count: they are turned off first.
+    /// is on has set them to something else.
     /// </summary>
     public List<ProfileConflict> FindConflicts(Profile profile)
     {
-        var others = State.Load().Applied
-            .Where(a => !Same(a.Profile, profile.Name)
-                        && (string.IsNullOrEmpty(profile.Group) || !Same(a.Group, profile.Group)))
-            .ToList();
+        var others = State.Load().Applied.Where(a => !Same(a.Profile, profile.Name)).ToList();
         if (others.Count == 0) return [];
 
         var conflicts = new List<ProfileConflict>();
@@ -463,10 +457,10 @@ public sealed class DeckService
 
     /// <summary>Copies current variables into a profile (created if missing) as Set entries.</summary>
     public (Profile Profile, List<string> Warnings) Capture(
-        string profileName, IEnumerable<(EnvScope Scope, string Name)> variables, bool portable, string? description = null)
+        string profileName, IEnumerable<(EnvScope Scope, string Name)> variables, bool portable)
     {
         ProfileStore.ValidateName(profileName);
-        var profile = Profiles.TryGet(profileName) ?? new Profile { Name = profileName, Description = description };
+        var profile = Profiles.TryGet(profileName) ?? new Profile { Name = profileName };
         var warnings = new List<string>();
         foreach (var (scope, name) in variables)
         {

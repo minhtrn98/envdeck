@@ -8,8 +8,8 @@ profile off restores exactly what it changed, even if other profiles or installe
 in the meantime.
 
 - **Profiles as JSON** — one readable file per profile, with a JSON schema for autocomplete in VS Code.
-- **On / off** — writes to the registry (User or Machine scope) and notifies running apps; *groups* make
-  profiles mutually exclusive (turn on `java21` and `java17` turns off).
+- **On / off** — writes to the registry (User or Machine scope) and notifies running apps; profiles can be stacked,
+  and turning one off restores its changes without removing later profiles' changes.
 - **PATH-aware** — `Prepend` / `Append` operations add entries to list variables instead of overwriting them.
 - **Versioned** — every save is a new version; diff any two versions and roll back. Hand edits made in another
   editor are picked up as new versions automatically.
@@ -43,7 +43,7 @@ and adds `envdeck` to your `PATH`.
 ## Quick start (CLI)
 
 ```powershell
-envdeck new java17 --group java --desc "JDK 17 for project A"
+envdeck new java17
 envdeck set java17 JAVA_HOME "C:\jdk\17"
 envdeck set java17 Path "%JAVA_HOME%\bin" --op prepend
 
@@ -52,7 +52,7 @@ envdeck set java21 JAVA_HOME "C:\jdk\21"
 
 envdeck apply java17 --dry-run     # preview
 envdeck apply java17               # on
-envdeck apply java21               # java17 goes off automatically (same group)
+envdeck apply java21               # overlapping changes are reported; profiles can stay on together
 envdeck status
 envdeck off java21                 # back to exactly how it was before
 
@@ -81,8 +81,6 @@ envdeck ui                         # open the window
 {
   "$schema": "../profile.schema.json",
   "name": "java17",
-  "description": "JDK 17 for project A",
-  "group": "java",
   "version": 3,
   "variables": [
     { "name": "JAVA_HOME", "value": "C:\\jdk\\17" },

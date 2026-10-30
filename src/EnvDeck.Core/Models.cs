@@ -67,13 +67,6 @@ public sealed class Profile
 
     public string Name { get; set; } = "";
 
-    public string? Description { get; set; }
-
-    /// <summary>Profiles sharing a group are mutually exclusive: turning one on turns the others off.</summary>
-    public string? Group { get; set; }
-
-    public List<string>? Tags { get; set; }
-
     /// <summary>Managed by <see cref="ProfileStore"/>; bumped on every content change.</summary>
     public int Version { get; set; }
 
@@ -85,9 +78,6 @@ public sealed class Profile
     {
         Schema = Schema,
         Name = Name,
-        Description = Description,
-        Group = Group,
-        Tags = Tags?.ToList(),
         Version = Version,
         UpdatedAt = UpdatedAt,
         Variables = Variables.Select(v => v.Clone()).ToList(),
@@ -201,8 +191,6 @@ public sealed class AppliedProfile
 
     public int Version { get; set; }
 
-    public string? Group { get; set; }
-
     public DateTimeOffset AppliedAt { get; set; }
 
     public List<AppliedChange> Changes { get; set; } = [];
@@ -211,7 +199,6 @@ public sealed class AppliedProfile
     {
         Profile = Profile,
         Version = Version,
-        Group = Group,
         AppliedAt = AppliedAt,
         Changes = Changes.Select(c => c.Clone()).ToList(),
     };

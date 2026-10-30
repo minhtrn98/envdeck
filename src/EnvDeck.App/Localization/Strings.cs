@@ -41,7 +41,6 @@ static class Strings
         ["TabSettings"] = ("Settings & tools", "Cài đặt & công cụ"),
 
         // ---------------------------------------------------------------- profiles: list
-        ["ProfileFilterTip"] = ("Filter by name, description, group or tag", "Lọc theo tên, mô tả, nhóm hoặc tag"),
         ["NewProfile"] = ("New profile", "Profile mới"),
         ["NewProfileTip"] = ("Create a profile (Ctrl+N)", "Tạo profile (Ctrl+N)"),
         ["ProfileListHint"] = ("Right-click a profile to rename, duplicate or delete it.", "Chuột phải vào profile để đổi tên, nhân bản hoặc xoá."),
@@ -50,7 +49,6 @@ static class Strings
         ["MenuDelete"] = ("Delete…", "Xoá…"),
         ["SwitchTip"] = ("Turn on / off (writes to the Windows environment)", "Bật / tắt (ghi vào biến môi trường Windows)"),
         ["ItemVars"] = ("{0} var", "{0} biến"),
-        ["ItemGroup"] = ("group: {0}", "nhóm: {0}"),
 
         // ---------------------------------------------------------------- profiles: editor
         ["NoProfileSelected"] = ("No profile selected", "Chưa chọn profile"),
@@ -61,11 +59,7 @@ static class Strings
         ["OnBadge"] = ("ON", "BẬT"),
         ["SaveTip"] = ("Save as a new version", "Lưu thành phiên bản mới"),
         ["DiscardTip"] = ("Throw away unsaved edits", "Bỏ các thay đổi chưa lưu"),
-        ["Description"] = ("Description", "Mô tả"),
-        ["Group"] = ("Group", "Nhóm"),
-        ["GroupTip"] = ("Profiles in the same group replace each other when turned on (e.g. java)", "Các profile cùng nhóm thay thế nhau khi bật (vd: java)"),
-        ["Tags"] = ("Tags", "Tag"),
-        ["TagsTip"] = ("Comma separated", "Phân cách bằng dấu phẩy"),
+        ["VariableSearchTip"] = ("Search variables by name or value", "Tìm biến theo tên hoặc giá trị"),
         ["AddVariable"] = ("Add variable", "Thêm biến"),
         ["FromEnvironment"] = ("From environment…", "Từ môi trường…"),
         ["FromEnvironmentTip"] = ("Pick variables, or single Path entries, from the current environment", "Chọn biến, hoặc từng mục của Path, từ môi trường hiện tại"),
@@ -139,7 +133,6 @@ static class Strings
         ["DeletedProfileTurnedOff"] = ("Deleted '{0}' (turned off first).", "Đã xoá '{0}' (đã tắt trước)."),
         ["TurnedOnStatus"] = ("Turned on '{0}': {1} variable(s) changed", "Đã bật '{0}': {1} biến thay đổi"),
         ["TurnedOffStatus"] = ("Turned off '{0}': {1} variable(s) changed", "Đã tắt '{0}': {1} biến thay đổi"),
-        ["AlsoTurnedOff"] = ("; turned off {0} (same group)", "; đã tắt {0} (cùng nhóm)"),
         ["NewTerminalsSee"] = ("New terminals see the change.", "Terminal mở mới sẽ thấy thay đổi."),
         ["ConflictHeading"] = ("Turn on '{0}' and override other profiles?", "Bật '{0}' và ghi đè profile khác?"),
         ["ConflictBody"] = ("These variables are set by profiles that are on. Turning '{1}' off later gives their values back.\n\n{0}",

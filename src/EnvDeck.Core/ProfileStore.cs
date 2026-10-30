@@ -258,9 +258,6 @@ public sealed partial class ProfileStore(DeckPaths paths, DeckSettings settings)
         copy.Schema = null;
         copy.Version = 0;
         copy.UpdatedAt = null;
-        if (copy.Tags is { Count: 0 }) copy.Tags = null;
-        if (string.IsNullOrEmpty(copy.Description)) copy.Description = null;
-        if (string.IsNullOrEmpty(copy.Group)) copy.Group = null;
         return DeckJson.Serialize(copy);
     }
 }

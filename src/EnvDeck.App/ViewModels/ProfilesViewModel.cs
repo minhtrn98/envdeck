@@ -23,8 +23,6 @@ public partial class ProfilesViewModel : ObservableObject
     public ProfilesViewModel(MainViewModel main)
     {
         _main = main;
-        View = CollectionViewSource.GetDefaultView(Items);
-        View.Filter = o => o is ProfileItemViewModel p && p.Matches(Filter);
         _previewTimer.Tick += (_, _) =>
         {
             _previewTimer.Stop();
@@ -36,14 +34,9 @@ public partial class ProfilesViewModel : ObservableObject
 
     public ObservableCollection<ProfileItemViewModel> Items { get; } = [];
 
-    public ICollectionView View { get; }
-
     public ObservableCollection<ProfileVersionInfo> History { get; } = [];
 
     public ObservableCollection<ChangeRow> Preview { get; } = [];
-
-    [ObservableProperty]
-    public partial string Filter { get; set; } = "";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DuplicateCommand), nameof(RenameCommand), nameof(DeleteCommand))]
@@ -108,8 +101,6 @@ public partial class ProfilesViewModel : ObservableObject
         SelectedPanel = panel;
         IsDetailsOpen = true;
     }
-
-    partial void OnFilterChanged(string value) => View.Refresh();
 
     partial void OnSelectedChanged(ProfileItemViewModel? oldValue, ProfileItemViewModel? newValue)
     {
@@ -333,9 +324,7 @@ public partial class ProfilesViewModel : ObservableObject
             _main.Run(() =>
             {
                 var result = turningOn ? Service.Apply(name) : Service.Unapply(name);
-                var extra = result.TurnedOff.Where(o => !SameName(o, name)).ToList();
                 _main.Status = L.T(turningOn ? "TurnedOnStatus" : "TurnedOffStatus", name, result.Changes.Count)
-                               + (extra.Count > 0 ? L.T("AlsoTurnedOff", string.Join(", ", extra)) : "")
                                + (result.Warnings.Count > 0 ? $". {string.Join(" ", result.Warnings)}" : ".")
                                + " " + L.T("NewTerminalsSee");
             });
@@ -512,31 +501,24 @@ public partial class ProfileItemViewModel : ObservableObject
     [ObservableProperty]
     public partial string Subtitle { get; set; } = "";
 
-    string _searchText = "";
-
     public void Update(Profile profile)
     {
-        var parts = new List<string> { $"v{profile.Version}", L.T("ItemVars", profile.Variables.Count) };
-        if (!string.IsNullOrEmpty(profile.Group)) parts.Add(L.T("ItemGroup", profile.Group));
-        if (!string.IsNullOrEmpty(profile.Description)) parts.Add(profile.Description);
-        Subtitle = string.Join(" · ", parts);
-        _searchText = string.Join(" ", [profile.Name, profile.Description, profile.Group, .. profile.Tags ?? []]);
+        Subtitle = $"v{profile.Version} · {L.T("ItemVars", profile.Variables.Count)}";
     }
-
-    public bool Matches(string filter) =>
-        string.IsNullOrWhiteSpace(filter) || _searchText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class ProfileEditorViewModel : ObservableObject
 {
     public ProfileEditorViewModel(Profile profile)
     {
+        VariableView = CollectionViewSource.GetDefaultView(Variables);
+        VariableView.Filter = item => item is VariableViewModel variable
+            && (string.IsNullOrWhiteSpace(VariableFilter)
+                || variable.Name.Contains(VariableFilter.Trim(), StringComparison.OrdinalIgnoreCase)
+                || variable.Value.Contains(VariableFilter.Trim(), StringComparison.OrdinalIgnoreCase));
         Name = profile.Name;
         Version = profile.Version;
         UpdatedAt = profile.UpdatedAt;
-        Description = profile.Description ?? "";
-        Group = profile.Group ?? "";
-        Tags = string.Join(", ", profile.Tags ?? []);
         foreach (var v in profile.Variables) Track(new VariableViewModel(v));
         Variables.CollectionChanged += (_, e) =>
         {
@@ -558,26 +540,18 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     public ObservableCollection<VariableViewModel> Variables { get; } = [];
 
-    [ObservableProperty]
-    public partial string Description { get; set; }
+    public ICollectionView VariableView { get; }
 
     [ObservableProperty]
-    public partial string Group { get; set; }
+    public partial string VariableFilter { get; set; } = "";
 
-    [ObservableProperty]
-    public partial string Tags { get; set; }
+    partial void OnVariableFilterChanged(string value) => VariableView.Refresh();
 
     [ObservableProperty]
     public partial bool IsDirty { get; set; }
 
     /// <summary>Raised on every edit (IsDirty only reports the first one).</summary>
     public event Action? Changed;
-
-    partial void OnDescriptionChanged(string value) => MarkChanged();
-
-    partial void OnGroupChanged(string value) => MarkChanged();
-
-    partial void OnTagsChanged(string value) => MarkChanged();
 
     void MarkChanged()
     {
@@ -622,11 +596,6 @@ public partial class ProfileEditorViewModel : ObservableObject
     {
         Name = Name,
         Version = Version,
-        Description = NullIfEmpty(Description),
-        Group = NullIfEmpty(Group),
-        Tags = Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) is { Length: > 0 } tags
-            ? tags.ToList()
-            : null,
         Variables = Variables.Select(v => v.ToModel()).ToList(),
     };
 
@@ -644,7 +613,6 @@ public partial class ProfileEditorViewModel : ObservableObject
         MarkChanged();
     }
 
-    static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }
 
 public partial class VariableViewModel : ObservableObject

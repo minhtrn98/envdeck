@@ -51,22 +51,25 @@ public class ApplyTests
     }
 
     [Fact]
-    public void Profiles_in_the_same_group_replace_each_other()
+    public void Profiles_can_be_stacked_and_unapplied_in_reverse_order()
     {
         using var t = new TestDeck();
         t.Set("Path", @"C:\Windows");
-        t.Save(new Profile { Name = "java17", Group = "java", Variables = [Var("JAVA_HOME", @"C:\jdk17"), Var("Path", @"C:\jdk17\bin", VarOp.Prepend)] });
-        t.Save(new Profile { Name = "java21", Group = "java", Variables = [Var("JAVA_HOME", @"C:\jdk21"), Var("Path", @"C:\jdk21\bin", VarOp.Prepend)] });
+        t.Save(new Profile { Name = "java17", Variables = [Var("JAVA_HOME", @"C:\jdk17"), Var("Path", @"C:\jdk17\bin", VarOp.Prepend)] });
+        t.Save(new Profile { Name = "java21", Variables = [Var("JAVA_HOME", @"C:\jdk21"), Var("Path", @"C:\jdk21\bin", VarOp.Prepend)] });
 
         t.Service.Apply("java17");
         var result = t.Service.Apply("java21");
 
-        Assert.Equal(["java17"], result.TurnedOff);
+        Assert.Empty(result.TurnedOff);
         Assert.Equal(@"C:\jdk21", t.Get("JAVA_HOME"));
-        Assert.Equal(@"C:\jdk21\bin;C:\Windows", t.Get("Path"));
-        Assert.Equal(["java21"], t.Service.State.Load().Applied.Select(a => a.Profile));
+        Assert.Equal(@"C:\jdk21\bin;C:\jdk17\bin;C:\Windows", t.Get("Path"));
+        Assert.Equal(["java17", "java21"], t.Service.State.Load().Applied.Select(a => a.Profile));
 
         t.Service.Unapply("java21");
+        Assert.Equal(@"C:\jdk17", t.Get("JAVA_HOME"));
+        Assert.Equal(@"C:\jdk17\bin;C:\Windows", t.Get("Path"));
+        t.Service.Unapply("java17");
         Assert.Null(t.Get("JAVA_HOME"));
         Assert.Equal(@"C:\Windows", t.Get("Path"));
     }
@@ -148,14 +151,15 @@ public class ApplyTests
         using var t = new TestDeck();
         t.Save(new Profile { Name = "a", Variables = [Var("FOO", "A"), Var("SAME", "1"), Var("Path", @"C:\a", VarOp.Prepend)] });
         t.Save(new Profile { Name = "b", Variables = [Var("FOO", "B"), Var("SAME", "1"), Var("Path", @"C:\b", VarOp.Prepend)] });
-        t.Save(new Profile { Name = "j17", Group = "java", Variables = [Var("JAVA_HOME", "17")] });
-        t.Save(new Profile { Name = "j21", Group = "java", Variables = [Var("JAVA_HOME", "21")] });
+        t.Save(new Profile { Name = "j17", Variables = [Var("JAVA_HOME", "17")] });
+        t.Save(new Profile { Name = "j21", Variables = [Var("JAVA_HOME", "21")] });
         t.Service.Apply("a");
         t.Service.Apply("j17");
 
         var conflict = Assert.Single(t.Service.FindConflicts(t.Service.Profiles.Get("b")));
         Assert.Equal(("FOO", "a", "A", "B"), (conflict.Name, conflict.OtherProfile, conflict.OtherValue, conflict.NewValue));
-        Assert.Empty(t.Service.FindConflicts(t.Service.Profiles.Get("j21"))); // same group: j17 is turned off instead
+        var jConflict = Assert.Single(t.Service.FindConflicts(t.Service.Profiles.Get("j21")));
+        Assert.Equal(("JAVA_HOME", "j17", "17", "21"), (jConflict.Name, jConflict.OtherProfile, jConflict.OtherValue, jConflict.NewValue));
         Assert.Contains(t.Service.Apply("b").Warnings, w => w.Contains("FOO") && w.Contains("'a'"));
     }
 

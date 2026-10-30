@@ -21,9 +21,9 @@ static class Commands
         if (profiles.Count == 0)
             Out.Dim("No profiles yet. Create one with: envdeck new <name>   (or: envdeck capture <name> JAVA_HOME ...)");
         else
-            Out.Table(["NAME", "VER", "ON", "GROUP", "VARS", "DESCRIPTION"],
+            Out.Table(["NAME", "VER", "ON", "VARS"],
                 profiles.Select(p => Row(p.Name, $"v{p.Version}", active.Contains(p.Name) ? "on" : "",
-                    p.Group ?? "", p.Variables.Count.ToString(CultureInfo.InvariantCulture), p.Description ?? "")));
+                    p.Variables.Count.ToString(CultureInfo.InvariantCulture))));
         foreach (var error in svc.Profiles.LoadErrors) Out.Warn(error);
         Out.Dim($"Data: {svc.Paths.DataDir}");
         return 0;
@@ -45,10 +45,6 @@ static class Commands
         Out.Write(p.Name, ConsoleColor.Cyan);
         Out.Write($"  v{p.Version}", ConsoleColor.DarkGray);
         if (svc.IsActive(p.Name)) Out.Write("  on", ConsoleColor.Green);
-        if (!string.IsNullOrEmpty(p.Group)) Out.Write($"  group: {p.Group}", ConsoleColor.DarkGray);
-        Out.Line();
-        if (!string.IsNullOrEmpty(p.Description)) Out.Line(p.Description);
-        if (p.Tags is { Count: > 0 }) Out.Dim("tags: " + string.Join(", ", p.Tags));
         Out.Line();
         if (p.Variables.Count == 0) Out.Dim("(no variables)   add one: envdeck set " + p.Name + " NAME VALUE");
         else
@@ -61,9 +57,6 @@ static class Commands
     {
         var name = a.Arg(0, "name");
         var from = a.Option("from");
-        var desc = a.Option("desc");
-        var group = a.Option("group");
-        var tags = a.Option("tags");
         a.EnsureNoUnknownOptions();
 
         ProfileStore.ValidateName(name);
@@ -72,9 +65,6 @@ static class Commands
         var profile = from is null ? new Profile() : svc.Profiles.GetRef(from).Clone();
         profile.Name = name;
         profile.Version = 0;
-        if (desc is not null) profile.Description = desc;
-        if (group is not null) profile.Group = group;
-        if (tags is not null) profile.Tags = tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
         var saved = svc.Profiles.Save(profile).Profile;
         Out.Success($"Created '{saved.Name}' v{saved.Version}: {svc.Profiles.FileOf(saved.Name)}");
@@ -146,12 +136,11 @@ static class Commands
         var profileName = a.Arg(0, "profile");
         var scope = Scope(a.Option("scope")) ?? EnvScope.User;
         var portable = a.Flag("portable");
-        var desc = a.Option("desc");
         a.EnsureNoUnknownOptions();
         var names = a.Positionals.Skip(1).ToList();
         if (names.Count == 0) throw new UsageException("Give at least one variable NAME to capture.");
 
-        var (profile, warnings) = svc.Capture(profileName, names.Select(n => (scope, n)), portable, desc);
+        var (profile, warnings) = svc.Capture(profileName, names.Select(n => (scope, n)), portable);
         foreach (var w in warnings) Out.Warn(w);
         Out.Success($"{profile.Name} v{profile.Version}: captured {names.Count - warnings.Count} variable(s) from {scope}");
         return 0;
@@ -202,7 +191,7 @@ static class Commands
         {
             var result = svc.Apply(name, dryRun);
             foreach (var off in result.TurnedOff.Where(o => !o.Equals(result.Target, StringComparison.OrdinalIgnoreCase)))
-                Out.Line($"{(dryRun ? "Would turn off" : "Turned off")} '{off}' (same group)", ConsoleColor.DarkYellow);
+                Out.Line($"{(dryRun ? "Would turn off" : "Turned off")} '{off}'", ConsoleColor.DarkYellow);
             PrintResult(result, dryRun ? "Would turn on" : "Turned on");
         }
         if (!dryRun)
@@ -246,7 +235,6 @@ static class Commands
             Out.Write("● ", ConsoleColor.Green);
             Out.Write(s.Entry.Profile, ConsoleColor.Cyan);
             Out.Write($"  v{s.Entry.Version}  since {s.Entry.AppliedAt.LocalDateTime:yyyy-MM-dd HH:mm}", ConsoleColor.DarkGray);
-            if (s.Entry.Group is not null) Out.Write($"  group: {s.Entry.Group}", ConsoleColor.DarkGray);
             Out.Line();
             if (s.ProfileMissing) Out.Warn("profile file deleted; 'envdeck off' still works from the journal");
             else if (s.Outdated) Out.Warn($"profile is now v{s.CurrentVersion}; run 'envdeck apply {s.Entry.Profile}' to update");

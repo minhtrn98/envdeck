@@ -144,6 +144,9 @@ public partial class MainWindow : Window
                 case ObservableCollection<VariableViewModel> variables:
                     Move(variables, (VariableViewModel)dragged, (VariableViewModel)target);
                     break;
+                case ICollectionView { SourceCollection: ObservableCollection<VariableViewModel> sourceVariables }:
+                    Move(sourceVariables, (VariableViewModel)dragged, (VariableViewModel)target);
+                    break;
                 case ObservableCollection<EnvEntryViewModel> entries:
                     Move(entries, (EnvEntryViewModel)dragged, (EnvEntryViewModel)target);
                     break;
