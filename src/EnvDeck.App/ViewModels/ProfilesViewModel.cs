@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EnvDeck.App.Localization;
@@ -9,9 +11,13 @@ using EnvDeck.Core;
 
 namespace EnvDeck.App.ViewModels;
 
+/// <summary>What the details panel under the variables shows.</summary>
+public enum DetailsPanel { Preview, History }
+
 public partial class ProfilesViewModel : ObservableObject
 {
     readonly MainViewModel _main;
+    readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     bool _reloading;
 
     public ProfilesViewModel(MainViewModel main)
@@ -19,6 +25,11 @@ public partial class ProfilesViewModel : ObservableObject
         _main = main;
         View = CollectionViewSource.GetDefaultView(Items);
         View.Filter = o => o is ProfileItemViewModel p && p.Matches(Filter);
+        _previewTimer.Tick += (_, _) =>
+        {
+            _previewTimer.Stop();
+            RefreshPreview();
+        };
     }
 
     DeckService Service => _main.Service;
@@ -42,11 +53,19 @@ public partial class ProfilesViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(DiscardCommand))]
     public partial ProfileEditorViewModel? Editor { get; set; }
 
-    // Save/Discard are enabled only while the editor has unsaved changes.
+    // Save/Discard are enabled only while the editor has unsaved changes; the preview follows every edit.
     partial void OnEditorChanged(ProfileEditorViewModel? oldValue, ProfileEditorViewModel? newValue)
     {
-        if (oldValue is not null) oldValue.PropertyChanged -= OnEditorPropertyChanged;
-        if (newValue is not null) newValue.PropertyChanged += OnEditorPropertyChanged;
+        if (oldValue is not null)
+        {
+            oldValue.PropertyChanged -= OnEditorPropertyChanged;
+            oldValue.Changed -= SchedulePreview;
+        }
+        if (newValue is not null)
+        {
+            newValue.PropertyChanged += OnEditorPropertyChanged;
+            newValue.Changed += SchedulePreview;
+        }
     }
 
     void OnEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -60,10 +79,35 @@ public partial class ProfilesViewModel : ObservableObject
     public partial VariableViewModel? SelectedVariable { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CompareVersionCommand), nameof(RollbackCommand))]
     public partial ProfileVersionInfo? SelectedVersion { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsSummary))]
     public partial string PreviewSummary { get; set; } = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPreviewSelected), nameof(IsHistorySelected), nameof(DetailsSummary))]
+    public partial DetailsPanel SelectedPanel { get; set; }
+
+    /// <summary>The details panel starts collapsed so the variables get the room.</summary>
+    [ObservableProperty]
+    public partial bool IsDetailsOpen { get; set; }
+
+    public bool IsPreviewSelected => SelectedPanel == DetailsPanel.Preview;
+
+    public bool IsHistorySelected => SelectedPanel == DetailsPanel.History;
+
+    /// <summary>One line next to the panel switch, visible even while the panel is collapsed.</summary>
+    public string DetailsSummary => IsPreviewSelected ? PreviewSummary : L.T("HistoryHint");
+
+    /// <summary>Picking Preview or History also opens the panel (even when that one was already selected).</summary>
+    [RelayCommand]
+    void ShowDetails(DetailsPanel panel)
+    {
+        SelectedPanel = panel;
+        IsDetailsOpen = true;
+    }
 
     partial void OnFilterChanged(string value) => View.Refresh();
 
@@ -95,22 +139,23 @@ public partial class ProfilesViewModel : ObservableObject
         if (Service.Profiles.LoadErrors.Count > 0) _main.Status = L.T("CouldNotRead", string.Join("; ", Service.Profiles.LoadErrors));
         // Keep unsaved edits of the selected profile across a refresh.
         if (select is not null || Editor is not { IsDirty: true } || !SameName(Editor.Name, Selected?.Name)) LoadEditor();
+        OnPropertyChanged(nameof(DetailsSummary)); // the history hint follows the language
     }
 
     public void RefreshActive()
     {
         var active = ActiveNames();
         foreach (var item in Items) item.SyncActive(active.Contains(item.Name));
+        SchedulePreview(); // turning profiles on/off changes what this one would change
     }
 
     void LoadEditor()
     {
-        Preview.Clear();
-        PreviewSummary = "";
         History.Clear();
         if (Selected is null)
         {
             Editor = null;
+            RefreshPreview();
             return;
         }
         _main.Run(() =>
@@ -119,6 +164,39 @@ public partial class ProfilesViewModel : ObservableObject
             Editor = new ProfileEditorViewModel(profile);
             foreach (var h in Service.Profiles.History(profile.Name)) History.Add(h);
         });
+        RefreshPreview();
+    }
+
+    void SchedulePreview()
+    {
+        _previewTimer.Stop();
+        _previewTimer.Start();
+    }
+
+    /// <summary>
+    /// What turning the edited profile on would change, unsaved edits included. Runs by itself after edits,
+    /// so an invalid intermediate state is shown in the summary instead of a dialog.
+    /// </summary>
+    void RefreshPreview()
+    {
+        _previewTimer.Stop();
+        Preview.Clear();
+        if (Editor is null)
+        {
+            PreviewSummary = "";
+            return;
+        }
+        try
+        {
+            var profile = Editor.ToProfile();
+            ProfileValidator.ThrowIfInvalid(profile);
+            foreach (var c in Service.Plan(profile).Where(c => !c.IsNoOp)) Preview.Add(new ChangeRow(c));
+            PreviewSummary = Preview.Count == 0 ? L.T("PreviewNothing") : L.T("PreviewCount", Preview.Count);
+        }
+        catch (Exception ex) when (ex is DeckException or IOException or UnauthorizedAccessException)
+        {
+            PreviewSummary = string.Join(" ", ex.Message.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
     }
 
     bool SaveEditor(bool askToReapply)
@@ -285,24 +363,6 @@ public partial class ProfilesViewModel : ObservableObject
     }
 
     [RelayCommand]
-    void PreviewChanges()
-    {
-        if (Editor is null) return;
-        var editor = Editor;
-        _main.Run(() =>
-        {
-            var profile = editor.ToProfile();
-            ProfileValidator.ThrowIfInvalid(profile);
-            Preview.Clear();
-            var changes = Service.Plan(profile);
-            foreach (var c in changes.Where(c => !c.IsNoOp)) Preview.Add(new ChangeRow(c));
-            PreviewSummary = Preview.Count == 0
-                ? L.T("PreviewNothing")
-                : L.T("PreviewCount", Preview.Count);
-        });
-    }
-
-    [RelayCommand]
     void AddVariable()
     {
         if (Editor is null) return;
@@ -351,7 +411,10 @@ public partial class ProfilesViewModel : ObservableObject
         SelectedVariable = keep;
     }
 
-    [RelayCommand]
+    // History rows: context menu (and double-click to compare).
+    bool HasSelectedVersion() => Editor is not null && SelectedVersion is not null;
+
+    [RelayCommand(CanExecute = nameof(HasSelectedVersion))]
     void Rollback()
     {
         if (Editor is null || SelectedVersion is null) return;
@@ -367,7 +430,7 @@ public partial class ProfilesViewModel : ObservableObject
             Reload(name);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedVersion))]
     void CompareVersion()
     {
         if (Editor is null || SelectedVersion is null) return;
@@ -434,7 +497,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         Variables.CollectionChanged += (_, e) =>
         {
             foreach (VariableViewModel v in e.NewItems ?? Array.Empty<VariableViewModel>()) v.PropertyChanged += OnVariableChanged;
-            IsDirty = true;
+            MarkChanged();
         };
         IsDirty = false;
     }
@@ -463,11 +526,20 @@ public partial class ProfileEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsDirty { get; set; }
 
-    partial void OnDescriptionChanged(string value) => IsDirty = true;
+    /// <summary>Raised on every edit (IsDirty only reports the first one).</summary>
+    public event Action? Changed;
 
-    partial void OnGroupChanged(string value) => IsDirty = true;
+    partial void OnDescriptionChanged(string value) => MarkChanged();
 
-    partial void OnTagsChanged(string value) => IsDirty = true;
+    partial void OnGroupChanged(string value) => MarkChanged();
+
+    partial void OnTagsChanged(string value) => MarkChanged();
+
+    void MarkChanged()
+    {
+        IsDirty = true;
+        Changed?.Invoke();
+    }
 
     /// <summary>
     /// Adds a variable the way the validator allows: Set/Remove replace every entry of the same variable;
@@ -520,7 +592,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         Variables.Add(v);
     }
 
-    void OnVariableChanged(object? sender, PropertyChangedEventArgs e) => IsDirty = true;
+    void OnVariableChanged(object? sender, PropertyChangedEventArgs e) => MarkChanged();
 
     static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }
