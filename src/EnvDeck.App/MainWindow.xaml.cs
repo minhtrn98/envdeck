@@ -21,6 +21,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm = new MainViewModel();
         Activated += (_, _) => _vm.OnActivated();
+        // Grouping replaces any header sort, so its arrow must go too.
+        _vm.CurrentEnv.GroupingApplied += () => { foreach (var column in EnvGrid.Columns) column.SortDirection = null; };
     }
 
     protected override void OnClosing(CancelEventArgs e)

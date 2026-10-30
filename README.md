@@ -15,6 +15,8 @@ in the meantime.
   editor are picked up as new versions automatically.
 - **Edit the live environment** — add, edit, delete variables and `PATH` entries in place; changes wait for
   *Apply* (preview + automatic backup). What a profile that is on manages is locked — edit it in the profile.
+- **Group related** — one button puts similar names next to each other (`redis_url`, `redis_pw`, `acc_redis`:
+  names are split on `_`, `__` and `-`, earlier parts count more); tables also sort by Name / Value.
 - **Backup & restore** — automatic backup before every change, manual snapshots, restore with preview.
 - **Move machines / reinstall Windows** — export everything (profiles + history + backups) into one `.zip`,
   import on the new machine; `--portable` capture turns `C:\Users\you\...` into `%USERPROFILE%\...`.

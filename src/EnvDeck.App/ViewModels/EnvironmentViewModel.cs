@@ -127,6 +127,7 @@ public partial class EnvironmentViewModel : ObservableObject
     {
         var keep = Selected;
         EndEdit();
+        if (View is ListCollectionView grouped) grouped.CustomSort = null;
         foreach (var row in Rows) row.Changed -= OnRowChanged;
         Rows.Clear();
         _main.Run(() =>
@@ -147,6 +148,32 @@ public partial class EnvironmentViewModel : ObservableObject
     }
 
     // ---------------------------------------------------------------- editing variables
+
+    /// <summary>Raised when the view order is no longer the one a column header shows.</summary>
+    public event Action? GroupingApplied;
+
+    /// <summary>
+    /// Shows variables with similar names next to each other (Redis__Url, redis_pw, acc_redis). Only the view order
+    /// changes - the environment has no order of its own - and it lasts until Refresh, Apply or a header sort.
+    /// </summary>
+    [RelayCommand]
+    void GroupRelated()
+    {
+        EndEdit();
+        var rank = NameGroups.Group(Rows.ToList(), r => r.Name)
+            .Select((row, index) => (row, index)).ToDictionary(x => x.row, x => x.index);
+        if (View is ListCollectionView list) list.CustomSort = new RankComparer(rank);
+        GroupingApplied?.Invoke();
+        _main.Status = L.T("EnvGrouped");
+    }
+
+    sealed class RankComparer(Dictionary<EnvRowViewModel, int> rank) : System.Collections.IComparer
+    {
+        // Rows added after grouping have no rank and go last.
+        int Rank(object? o) => o is EnvRowViewModel r && rank.TryGetValue(r, out var i) ? i : int.MaxValue;
+
+        public int Compare(object? x, object? y) => Rank(x).CompareTo(Rank(y));
+    }
 
     [RelayCommand]
     void AddVariable()

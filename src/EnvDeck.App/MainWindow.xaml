@@ -363,8 +363,10 @@
                         <DockPanel Grid.Row="2" Margin="0,0,0,6">
                             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                                 <Button Content="{l:Tr AddVariable}" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
-                                <Button Content="{l:Tr FromEnvironment}" Command="{Binding AddFromEnvironmentCommand}"
+                                <Button Content="{l:Tr FromEnvironment}" Command="{Binding AddFromEnvironmentCommand}" Margin="0,0,6,0"
                                         ToolTip="{l:Tr FromEnvironmentTip}" />
+                                <Button Content="{l:Tr GroupRelated}" Command="{Binding GroupRelatedCommand}"
+                                        ToolTip="{l:Tr GroupRelatedTip}" />
                             </StackPanel>
                             <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="12,0,0,0"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
@@ -539,12 +541,13 @@
                                     Style="{DynamicResource AccentButtonStyle}" ToolTip="{l:Tr EnvApplyTip}" />
                         </StackPanel>
                         <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                            <Button Content="{l:Tr AddVariable}" Command="{Binding AddVariableCommand}" />
+                            <Button Content="{l:Tr AddVariable}" Command="{Binding AddVariableCommand}" Margin="0,0,6,0" />
+                            <Button Content="{l:Tr GroupRelated}" Command="{Binding GroupRelatedCommand}" ToolTip="{l:Tr EnvGroupRelatedTip}" />
                         </StackPanel>
                         <TextBlock Style="{StaticResource Hint}" Text="{l:Tr EnvEditHint}" ToolTip="{l:Tr EnvEditHint}"
                                    VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="12,0,0,0" />
                     </DockPanel>
-                    <DataGrid Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                    <DataGrid x:Name="EnvGrid" Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                               SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting">
                         <DataGrid.InputBindings>

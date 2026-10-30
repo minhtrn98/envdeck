@@ -396,6 +396,25 @@ public partial class ProfilesViewModel : ObservableObject
         Editor.Variables.Remove(row);
     }
 
+    /// <summary>Puts variables with related names (Redis__Url, Redis__Password) next to each other.</summary>
+    [RelayCommand]
+    void GroupRelated()
+    {
+        if (Editor is null) return;
+        var keep = SelectedVariable;
+        var target = NameGroups.Group(Editor.Variables.ToList(), v => v.Name);
+        var moved = 0;
+        for (var i = 0; i < target.Count; i++)
+        {
+            var from = Editor.Variables.IndexOf(target[i]);
+            if (from == i) continue;
+            Editor.Variables.Move(from, i);
+            moved++;
+        }
+        SelectedVariable = keep;
+        _main.Status = moved == 0 ? L.T("GroupedAlready") : L.T("GroupedRelated", moved);
+    }
+
     [RelayCommand]
     void MoveUp() => Move(-1);
 
