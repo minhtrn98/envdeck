@@ -22,11 +22,25 @@
         </Style>
         <!-- The editor of a text cell: same left edge and height as the TextBlock it replaces, so the text does not jump. -->
         <Style x:Key="CellTextEdit" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="Margin" Value="0" />
+            <!-- The theme's input fill is translucent, so on a selected row it takes that row's tint (purple). Use the opaque one. -->
+            <Style.Resources>
+                <!-- Square, so the editor covers the whole cell instead of leaving a rounded rim of the cell showing. -->
+                <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
+                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlFocusedBorderBrush" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlElevationBorderBrush" Color="Transparent" />
+                <SolidColorBrush x:Key="TextControlBackground" Color="{DynamicResource SolidBackgroundFillColorBase}" />
+                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{DynamicResource SolidBackgroundFillColorBase}" />
+                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{DynamicResource SolidBackgroundFillColorBase}" />
+            </Style.Resources>
+            <Setter Property="Margin" Value="-1,-1,-1,-2" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="8,6,10,8" />
+            <Setter Property="Padding" Value="9,6,10,8" />
         </Style>
         <!-- A ComboBox that lives in a grid cell looks like the text cells around it: no box, no fill, just the value and a
              chevron, with a faint highlight on hover. Its own template (the theme's one colours the text per state, which
