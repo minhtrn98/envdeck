@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write      # build provenance attestation
+  attestations: write
 
 jobs:
   release:
@@ -82,6 +84,11 @@ jobs:
         if: vars.SIGNPATH_ENABLED == 'true'
         shell: pwsh
         run: Copy-Item artifacts/signed-installers/* artifacts/dist -Force
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: artifacts/dist/*
 
       - uses: softprops/action-gh-release@v2
         with:

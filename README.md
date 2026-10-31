@@ -181,6 +181,15 @@ EnvDeck requires the .NET 10 Desktop Runtime; install it with
 The manifest is in `bucket/EnvDeck.json`. When publishing a new version, update its version, download URLs,
 and SHA256 hashes from the release ZIPs so Scoop users can install the new release.
 
+## Verifying a download
+
+Release files are not code-signed yet, so Windows may show "Unknown publisher". Installing with winget or Scoop avoids
+the browser download warning, and every release file carries a GitHub build attestation proving which commit built it:
+
+```powershell
+gh attestation verify EnvDeck-<version>-win-x64.zip --repo minhtrn98/envdeck
+```
+
 ## Code signing policy
 
 Release binaries and installers are signed with a certificate provided by the
