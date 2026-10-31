@@ -72,6 +72,14 @@ no key used in XAML/code that is missing from the table.
 Drive the window with UI Automation against a sandboxed instance; prefer reading cell text over screenshots.
 Only capture a screenshot after confirming EnvDeck is the foreground window (never other apps).
 
+## Releasing
+
+Bump `<Version>` in `Directory.Build.props`, tag `vX.Y.Z`, push. `.github/workflows/release.yml` tests, compiles
+(`scripts/publish.ps1 -PublishOnly`), optionally signs through SignPath (`SIGNPATH_ENABLED`, off: foundation
+application declined), packages (`-Prebuilt`), attests provenance and publishes; the `winget` job needs
+`WINGET_ENABLED` (only after the first winget-pkgs PR is merged). Scoop's `bucket/EnvDeck.json` is updated by hand
+after each release. Details in README "Publishing to winget". No MSIX: registry writes would be virtualized.
+
 ## Commits
 
 Conventional Commits (`feat(app): ...`), body explains *why*, atomic commits, verify each builds.

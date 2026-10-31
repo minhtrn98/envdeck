@@ -43,6 +43,10 @@ winget install minhtrn98.EnvDeck     # once published; pulls in the .NET 10 Desk
 Or download the installer / portable zip from the Releases page. The installer is per-user (no admin prompt)
 and adds `envdeck` to your `PATH`.
 
+The files are not code-signed yet, so a browser download may show "Unknown publisher" (SmartScreen) and a locked-down
+company PC (AppLocker/WDAC) may block them; installing with winget or Scoop avoids the download warning. See
+[Verifying a download](#verifying-a-download) and [Code signing policy](#code-signing-policy).
+
 ## Quick start (CLI)
 
 ```powershell
@@ -161,9 +165,17 @@ the installer silently, so the installer's own runtime check cannot warn the use
 
 1. Bump `<Version>` in `Directory.Build.props`, then push a tag (`git tag v0.1.2 && git push --tags`); the Release
    workflow builds the zip and the x64/arm64 installers and creates the GitHub release.
+   The workflow also attests the build provenance of every file. Code signing is prepared but off: the SignPath
+   Foundation application was declined (not enough public visibility yet; reapply later). To enable it, create the
+   SignPath project `envdeck` with policy `release-signing` and artifact configurations `binaries` / `installer`
+   (from `.signpath/`), add secret `SIGNPATH_API_TOKEN` and variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_ENABLED=true`.
+   MSIX/Microsoft Store was considered and dropped: packaged apps get registry writes virtualized, and the
+   exceptions (`unvirtualizedResources`, `allowElevation`) are restricted capabilities.
 2. Later releases, once the first version is merged: set the repository variable `WINGET_ENABLED=true` and the
    secret `WINGET_TOKEN`; the workflow opens the winget PR for you (it copies the previous manifests, so the
-   dependency carries over).
+   dependency carries over). `WINGET_ENABLED` must stay off until the first PR is merged, or the job fails.
+3. Scoop: after the release, update `bucket/EnvDeck.json` (version, URLs, hashes of the two zips).
+4. Optional: send the new setup file to https://www.microsoft.com/wdsi/filesubmission to clear a false SmartScreen warning.
 
 ## Installing with Scoop
 
