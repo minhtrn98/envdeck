@@ -13,7 +13,7 @@
          EnvDeck is not strong-name signed, so pin it to empty. -->
     <PublicKey></PublicKey>
 
-    <Version>0.4.2</Version>
+    <Version>0.4.3</Version>
     <Product>EnvDeck</Product>
     <Authors>Trần Công Minh</Authors>
     <Copyright>Copyright (c) 2026 Trần Công Minh</Copyright>
