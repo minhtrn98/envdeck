@@ -21,6 +21,7 @@ in the meantime.
 - **Secrets stay hidden** — values of variables that look like secrets (`*_PASSWORD`, `*_TOKEN`, `*ApiKey`,
   `ConnectionStrings__*`...) are masked in every table, search/compare result and preview; an eye button shows one,
   the context menu marks or unmarks a name, and a copied secret is wiped from the clipboard after 30 s.
+  The CLI masks them too (show, nv, search, diff, pply...); add --reveal to print the real values.
 - **Move machines / reinstall Windows** — export everything (profiles + history + backups) into one
   password-protected `.envdeck` file (AES-256-GCM, PBKDF2-SHA256; a forgotten password cannot be recovered; a plain
   `.zip` is still possible but unencrypted), import on the new machine; `--portable` capture turns `C:\Users\you\...` into `%USERPROFILE%\...`.

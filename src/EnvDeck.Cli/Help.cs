@@ -60,6 +60,7 @@ static class Help
         foreach (var (cmd, _, summary) in Entries) Out.Line($"  {cmd,-10} {summary}");
         Out.Line();
         Out.Dim("Environment: ENVDECK_HOME=<folder> overrides the data folder; ENVDECK_SANDBOX=1 writes to a sandbox registry key.");
+        Out.Dim("Secrets: values of variables that look like secrets print as ••••••••; add --reveal to see them (shell always prints real values).");
         Out.Dim("Exit codes: 0 ok, 1 error, 2 usage, 3 needs administrator.");
     }
 }

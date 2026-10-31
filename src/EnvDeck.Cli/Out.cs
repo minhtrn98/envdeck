@@ -56,6 +56,9 @@ static class Out
 
     public static string Truncate(string text, int max) => text.Length <= max ? text : text[..Math.Max(0, max - 1)] + "…";
 
+    /// <summary>Applied to every value a command prints; the program swaps in the secret mask.</summary>
+    public static Func<string, string?, string?> Hide { get; set; } = (_, value) => value;
+
     public static void Changes(IEnumerable<PlannedChange> changes)
     {
         var any = false;
@@ -66,7 +69,7 @@ static class Out
             switch (c.Action)
             {
                 case ChangeAction.Create:
-                    Line($"  + {key} = {c.After}", ConsoleColor.Green);
+                    Line($"  + {key} = {Hide(c.Name, c.After)}", ConsoleColor.Green);
                     break;
                 case ChangeAction.Delete:
                     Line($"  - {key}", ConsoleColor.Red);
@@ -75,7 +78,9 @@ static class Out
                     Line($"  ~ {key}", ConsoleColor.Yellow);
                     var before = PathList.Split(c.Before);
                     var after = PathList.Split(c.After);
-                    if (before.Count > 1 || after.Count > 1)
+                    // The entries of a masked value would give it away, so a secret is always shown as before → after.
+                    var masked = Hide(c.Name, c.After) != c.After;
+                    if (!masked && (before.Count > 1 || after.Count > 1))
                     {
                         foreach (var e in after.Where(e => !PathList.Contains(before, e))) Line($"      + {e}", ConsoleColor.Green);
                         foreach (var e in before.Where(e => !PathList.Contains(after, e))) Line($"      - {e}", ConsoleColor.Red);
@@ -83,7 +88,7 @@ static class Out
                     }
                     else
                     {
-                        Line($"      {c.Before}  →  {c.After}");
+                        Line($"      {Hide(c.Name, c.Before)}  →  {Hide(c.Name, c.After)}");
                     }
                     break;
             }

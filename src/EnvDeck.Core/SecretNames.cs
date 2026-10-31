@@ -15,6 +15,9 @@ public static partial class SecretNames
     // A name that ends like this points at a secret (a file, a folder...) without being one.
     static readonly HashSet<string> NotSecretEndings = ["path", "file", "dir", "folder", "name", "url", "uri", "host", "port", "id", "enabled"];
 
+    /// <summary>What is shown instead of a secret's value.</summary>
+    public const string Mask = "••••••••";
+
     public static bool Looks(string name)
     {
         var parts = Split(name);

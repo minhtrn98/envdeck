@@ -6,10 +6,11 @@ namespace EnvDeck.Cli;
 
 static class Commands
 {
-    const string SecretMask = "••••••••";
+    /// <summary>Set by --reveal: print secret values instead of the mask.</summary>
+    public static bool Reveal { get; set; }
 
     static string DisplayValue(DeckService service, string name, string? value) =>
-        string.IsNullOrEmpty(value) ? "" : service.IsSecret(name) ? SecretMask : value;
+        string.IsNullOrEmpty(value) ? "" : Reveal || !service.IsSecret(name) ? value : SecretNames.Mask;
 
     // ---------------------------------------------------------------- profiles
 
@@ -38,7 +39,12 @@ static class Commands
         var p = svc.Profiles.GetRef(reference);
         if (json)
         {
-            Out.Line(DeckJson.Serialize(p));
+            var shown = p.Clone();
+            if (!Reveal)
+            {
+                foreach (var v in shown.Variables) v.Value = svc.Hide(v.Name, v.Value);
+            }
+            Out.Line(DeckJson.Serialize(shown));
             return 0;
         }
 
@@ -392,6 +398,7 @@ static class Commands
         if (result.Imported.Count > 0) Out.Dim("Turn them on with: envdeck apply <profile>");
         return 0;
     }
+
     // ---------------------------------------------------------------- search / compare
 
     public static int Search(DeckService svc, CliArgs a)
@@ -444,7 +451,7 @@ static class Commands
         foreach (var row in rows)
         {
             var key = $"{row.Scope}\\{row.Name}";
-            var secret = svc.IsSecret(row.Name);
+            var secret = !Reveal && svc.IsSecret(row.Name);
             switch (row.Kind)
             {
                 case DiffKind.Same:
@@ -505,7 +512,7 @@ static class Commands
             .ToList();
 
         // A single list variable (e.g. "envdeck env path") is easier to read one entry per line.
-        if (rows.Count is 1 or 2 && rows.All(r => !svc.IsSecret(r.Value.Name) && PathList.Split(r.Value.Value).Count > 1))
+        if (rows.Count is 1 or 2 && rows.All(r => (Reveal || !svc.IsSecret(r.Value.Name)) && PathList.Split(r.Value.Value).Count > 1))
         {
             foreach (var (sc, v) in rows)
             {

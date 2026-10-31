@@ -5,7 +5,7 @@ namespace EnvDeck.App;
 /// <summary>What the UI shows in place of a secret's value. The real value stays in the model; only the display is masked.</summary>
 static class Secrecy
 {
-    public const string Mask = "••••••••";
+    public const string Mask = SecretNames.Mask;
 
     static DeckService? _service;
 

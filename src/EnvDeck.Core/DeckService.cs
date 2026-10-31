@@ -121,6 +121,10 @@ public sealed class DeckService
         return Settings.SecretNames.Contains(name, StringComparer.OrdinalIgnoreCase) || SecretNames.Looks(name);
     }
 
+    /// <summary>The value as it may be displayed: masked when the variable is a secret and the value is not empty.</summary>
+    public string? Hide(string name, string? value) =>
+        string.IsNullOrEmpty(value) || !IsSecret(name) ? value : SecretNames.Mask;
+
     /// <summary>Marks a name as secret or plain; only a choice that differs from the name-based guess is stored.</summary>
     public void SetSecret(string name, bool secret)
     {

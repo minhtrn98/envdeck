@@ -58,4 +58,18 @@ public class SecretNamesTests
         Assert.Empty(t.Service.Settings.SecretNames);
         Assert.Empty(t.Service.Settings.PlainNames);
     }
+
+    [Fact]
+    public void Hide_masks_secrets_only_and_leaves_empty_values_alone()
+    {
+        using var t = new TestDeck();
+
+        Assert.Equal(SecretNames.Mask, t.Service.Hide("DB_PASSWORD", "x"));
+        Assert.Equal("C:\\jdk", t.Service.Hide("JAVA_HOME", "C:\\jdk"));
+        Assert.Equal("", t.Service.Hide("DB_PASSWORD", ""));
+        Assert.Null(t.Service.Hide("DB_PASSWORD", null));
+
+        t.Service.SetSecret("JAVA_HOME", true);
+        Assert.Equal(SecretNames.Mask, t.Service.Hide("JAVA_HOME", "C:\\jdk"));
+    }
 }

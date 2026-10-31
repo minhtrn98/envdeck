@@ -29,6 +29,10 @@ if (a.Command is null or "help" || a.Flag("help"))
 try
 {
     var svc = DeckService.CreateDefault();
+    // Secret values print as ••••••••; --reveal asks for the real ones.
+    var reveal = a.Flag("reveal");
+    Commands.Reveal = reveal;
+    Out.Hide = (name, value) => reveal ? value : svc.Hide(name, value);
     foreach (var name in svc.ExternalEdits) Out.Dim($"'{name}' was edited by hand; saved as a new version.");
     if (svc.Env.IsSandbox) Out.Dim("[sandbox mode: HKCU\\Software\\EnvDeck\\Sandbox]");
 
