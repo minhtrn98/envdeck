@@ -237,9 +237,39 @@ public sealed partial class ProfileStore(DeckPaths paths, DeckSettings settings)
 
     void WriteVersion(Profile profile)
     {
+        KeepLegacyMetadata(profile.Name);
         DeckJson.Write(FileOf(profile.Name), profile);
         DeckJson.Write(Path.Combine(HistoryDirOf(profile.Name), $"v{profile.Version:D4}.json"), profile);
         PruneHistory(profile.Name);
+    }
+
+    static readonly string[] LegacyKeys = ["description", "group", "tags"];
+
+    /// <summary>
+    /// Profiles used to carry a description, a group and tags; they are gone from the model, so rewriting such a file
+    /// would drop them silently. The file as it was goes to <c>legacy/</c> first.
+    /// </summary>
+    void KeepLegacyMetadata(string name)
+    {
+        var file = FileOf(name);
+        if (!File.Exists(file)) return;
+        try
+        {
+            var text = File.ReadAllText(file);
+            using var doc = System.Text.Json.JsonDocument.Parse(text,
+                new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
+                || !doc.RootElement.EnumerateObject().Any(p => LegacyKeys.Contains(p.Name, StringComparer.OrdinalIgnoreCase)))
+                return;
+
+            var dir = Path.Combine(paths.DataDir, "legacy");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.json"), text);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Broken JSON is reported elsewhere; there is nothing structured to keep.
+        }
     }
 
     void PruneHistory(string name)
