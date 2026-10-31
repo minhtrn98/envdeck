@@ -10,23 +10,30 @@ param(
     [string] $Version = '0.1.0',
     [ValidateSet('win-x64', 'win-arm64')]
     [string] $Runtime = 'win-x64',
-    [string] $Configuration = 'Release'
+    [string] $Configuration = 'Release',
+    # Only compile into artifacts/publish/<runtime> (CI signs those files before packaging).
+    [switch] $PublishOnly,
+    # Skip compiling and package what is already in artifacts/publish/<runtime> (the signed files).
+    [switch] $Prebuilt
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $out = Join-Path $root "artifacts/publish/$Runtime"
 $dist = Join-Path $root 'artifacts/dist'
-Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
+if (-not $Prebuilt) { Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue }
 New-Item -ItemType Directory -Force $dist | Out-Null
 
-# Framework-dependent: the install is ~1 MB and winget pulls in the .NET Desktop Runtime as a dependency.
-$publish = @('-c', $Configuration, '-r', $Runtime, '--self-contained', 'false', "-p:Version=$Version", '-o', $out, '--nologo')
-foreach ($project in 'src/EnvDeck.App/EnvDeck.App.csproj', 'src/EnvDeck.Cli/EnvDeck.Cli.csproj') {
-    dotnet publish (Join-Path $root $project) @publish
-    if ($LASTEXITCODE) { throw "dotnet publish $project failed" }
+if (-not $Prebuilt) {
+    # Framework-dependent: the install is ~1 MB and winget pulls in the .NET Desktop Runtime as a dependency.
+    $publish = @('-c', $Configuration, '-r', $Runtime, '--self-contained', 'false', "-p:Version=$Version", '-o', $out, '--nologo')
+    foreach ($project in 'src/EnvDeck.App/EnvDeck.App.csproj', 'src/EnvDeck.Cli/EnvDeck.Cli.csproj') {
+        dotnet publish (Join-Path $root $project) @publish
+        if ($LASTEXITCODE) { throw "dotnet publish $project failed" }
+    }
+    Get-ChildItem $out -Filter *.pdb | Remove-Item
 }
-Get-ChildItem $out -Filter *.pdb | Remove-Item
+if ($PublishOnly) { return }
 
 $zip = Join-Path $dist "EnvDeck-$Version-$Runtime.zip"
 Compress-Archive -Path "$out/*" -DestinationPath $zip -Force

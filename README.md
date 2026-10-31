@@ -181,6 +181,17 @@ EnvDeck requires the .NET 10 Desktop Runtime; install it with
 The manifest is in `bucket/EnvDeck.json`. When publishing a new version, update its version, download URLs,
 and SHA256 hashes from the release ZIPs so Scoop users can install the new release.
 
+## Code signing policy
+
+Release binaries and installers are signed with a certificate provided by the
+[SignPath Foundation](https://signpath.org/), through [SignPath.io](https://about.signpath.io/).
+The publisher shown by Windows is therefore "SignPath Foundation".
+
+- Only files built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml` are signed.
+- Each release is approved by the maintainer ([@minhtrn98](https://github.com/minhtrn98)) before signing.
+- Signed: `EnvDeck.App.exe`, `envdeck.exe`, EnvDeck's own `.dll` files and the installers.
+- Privacy: EnvDeck does not send any data over the network. Everything stays on your machine; profiles are stored under your data folder.
+
 ## License
 
 MIT

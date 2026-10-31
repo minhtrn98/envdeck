@@ -19,12 +19,70 @@ jobs:
       - run: dotnet test EnvDeck.slnx -c Release
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
-      - name: Build artifacts
+      - name: Compile
         shell: pwsh
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
-          ./scripts/publish.ps1 -Version $version -Runtime win-x64
-          ./scripts/publish.ps1 -Version $version -Runtime win-arm64
+          ./scripts/publish.ps1 -Version $version -Runtime win-x64 -PublishOnly
+          ./scripts/publish.ps1 -Version $version -Runtime win-arm64 -PublishOnly
+
+      # Code signing through SignPath Foundation (free for open source). Enabled by repository variable SIGNPATH_ENABLED=true,
+      # which needs variables SIGNPATH_ORGANIZATION_ID and secret SIGNPATH_API_TOKEN. See README, "Code signing policy".
+      - name: Upload unsigned binaries
+        if: vars.SIGNPATH_ENABLED == 'true'
+        id: unsigned-binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-binaries
+          path: artifacts/publish
+      - name: Sign binaries
+        if: vars.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: envdeck
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: binaries
+          github-artifact-id: ${{ steps.unsigned-binaries.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/signed-binaries
+      - name: Use signed binaries
+        if: vars.SIGNPATH_ENABLED == 'true'
+        shell: pwsh
+        run: Copy-Item artifacts/signed-binaries/* artifacts/publish -Recurse -Force
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          ./scripts/publish.ps1 -Version $version -Runtime win-x64 -Prebuilt
+          ./scripts/publish.ps1 -Version $version -Runtime win-arm64 -Prebuilt
+
+      - name: Upload unsigned installers
+        if: vars.SIGNPATH_ENABLED == 'true'
+        id: unsigned-installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installers
+          path: artifacts/dist/*-setup.exe
+      - name: Sign installers
+        if: vars.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: envdeck
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installers.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/signed-installers
+      - name: Use signed installers
+        if: vars.SIGNPATH_ENABLED == 'true'
+        shell: pwsh
+        run: Copy-Item artifacts/signed-installers/* artifacts/dist -Force
+
       - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/dist/*

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration: the compiled EnvDeck files, signed before they are zipped and installed. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <directory path="win-x64">
+      <pe-file-set>
+        <include path="EnvDeck.*.exe" />
+        <include path="EnvDeck.*.dll" />
+        <include path="envdeck.exe" />
+        <include path="envdeck.dll" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </directory>
+    <directory path="win-arm64">
+      <pe-file-set>
+        <include path="EnvDeck.*.exe" />
+        <include path="EnvDeck.*.dll" />
+        <include path="envdeck.exe" />
+        <include path="envdeck.dll" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </directory>
+  </zip-file>
+</artifact-configuration>
