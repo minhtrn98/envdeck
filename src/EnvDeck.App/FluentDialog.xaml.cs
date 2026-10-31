@@ -36,7 +36,7 @@ public partial class FluentDialog : Window
 
         // Like MessageBox: Ctrl+C copies the text.
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) =>
-            Clipboard.SetText(string.IsNullOrEmpty(Body.Text) ? Heading.Text : $"{Heading.Text}{Environment.NewLine}{Body.Text}")));
+            Secrecy.Copy(string.IsNullOrEmpty(Body.Text) ? Heading.Text : $"{Heading.Text}{Environment.NewLine}{Body.Text}", secret: false)));
     }
 
     public DialogChoice Choice { get; private set; } = DialogChoice.Cancel;

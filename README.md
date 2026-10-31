@@ -15,6 +15,8 @@ in the meantime.
   editor are picked up as new versions automatically.
 - **Edit the live environment** — add, edit, delete variables and `PATH` entries in place; changes wait for
   *Apply* (preview + automatic backup). What a profile that is on manages is locked — edit it in the profile.
+- **Keyboard** — `Ctrl+C` copies `NAME=value` of the selected row, `Ctrl+S` saves the profile (in the Environment
+  tab: applies the pending edits), `F5` reloads the Environment, `Del` deletes, `Alt+↑/↓` moves a row, `Ctrl+N` new profile.
 - **Group related** — one button puts similar names next to each other (`redis_url`, `redis_pw`, `acc_redis`:
   names are split on `_`, `__` and `-`, earlier parts count more); tables also sort by Name / Value.
 - **Backup & restore** — automatic backup before every change, manual snapshots, restore with preview.

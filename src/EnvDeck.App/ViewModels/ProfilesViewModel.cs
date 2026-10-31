@@ -137,6 +137,7 @@ public partial class ProfilesViewModel : ObservableObject
     {
         var active = ActiveNames();
         foreach (var item in Items) item.SyncActive(active.Contains(item.Name));
+        UpdateApplyState();
         SchedulePreview(); // turning profiles on/off changes what this one would change
     }
 
@@ -147,6 +148,7 @@ public partial class ProfilesViewModel : ObservableObject
         {
             Editor = null;
             RefreshPreview();
+            UpdateApplyState();
             return;
         }
         _main.Run(() =>
@@ -156,6 +158,64 @@ public partial class ProfilesViewModel : ObservableObject
             foreach (var h in Service.Profiles.History(profile.Name)) History.Add(h);
         });
         RefreshPreview();
+        UpdateApplyState();
+    }
+
+    /// <summary>The version of <paramref name="name"/> that is written to the environment now, if it is on.</summary>
+    int? AppliedVersionOf(string name) =>
+        Service.State.Load().Applied.FirstOrDefault(a => SameName(a.Profile, name))?.Version;
+
+    /// <summary>True while the profile is on but the environment still has an older saved version of it.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ApplyEditedCommand))]
+    public partial bool NeedsApply { get; set; }
+
+    [ObservableProperty]
+    public partial string NotAppliedText { get; set; } = "";
+
+    [ObservableProperty]
+    public partial string ApplyEditedText { get; set; } = "";
+
+    void UpdateApplyState()
+    {
+        int? applied = null;
+        if (Editor is { } editor && Selected is { IsActive: true }) applied = AppliedVersionOf(editor.Name);
+        if (Editor is { } e && applied is { } a && a != e.Version)
+        {
+            NotAppliedText = L.T("NotApplied", a, e.Version);
+            ApplyEditedText = L.T("ApplyVersion", e.Version);
+            NeedsApply = true;
+        }
+        else
+        {
+            NotAppliedText = ApplyEditedText = "";
+            NeedsApply = false;
+        }
+    }
+
+    /// <summary>Writes the saved version of the edited profile to the environment (it was left for later when saving).</summary>
+    [RelayCommand(CanExecute = nameof(NeedsApply))]
+    void ApplyEdited()
+    {
+        if (Editor is not { } editor) return;
+        var name = editor.Name;
+        try
+        {
+            if (!SaveIfEditing(name, "ActionApplying") || !ConfirmOverrides(name)) return;
+            _main.Run(() =>
+            {
+                var result = Service.Apply(name);
+                _main.Status = L.T("ReappliedStatus", name, Service.Profiles.Get(name).Version, result.Changes.Count)
+                               + (result.Warnings.Count > 0 ? $" {string.Join(" ", result.Warnings)}" : "")
+                               + " " + L.T("NewTerminalsSee");
+            });
+            _main.CurrentEnv.RefreshIfClean();
+            _main.Backups.Refresh();
+        }
+        finally
+        {
+            RefreshActive();
+        }
     }
 
     void SchedulePreview()
@@ -200,10 +260,21 @@ public partial class ProfilesViewModel : ObservableObject
             editor.MarkSaved(profile.Version);
             Items.FirstOrDefault(i => SameName(i.Name, profile.Name))?.Update(profile);
             _main.Status = changed ? L.T("SavedAsVersion", profile.Name, profile.Version) : L.T("NoChangesToSave");
-            if (changed && askToReapply && Service.IsActive(profile.Name)
-                && Dialogs.Confirm(L.T("ApplyNowHeading", profile.Version, profile.Name), L.T("ApplyNowBody"),
+            if (!changed || !askToReapply || AppliedVersionOf(profile.Name) is not { } applied) return;
+
+            // The profile is on: say clearly that saving and applying are two steps, and that Later leaves the
+            // environment as it is (the Apply button stays available).
+            if (Dialogs.Confirm(L.T("ApplyNowHeading", profile.Version, profile.Name), L.T("ApplyNowBody", applied),
                     L.T("ApplyNow"), L.T("Later")))
+            {
                 Service.Apply(profile.Name);
+                _main.CurrentEnv.RefreshIfClean();
+                _main.Backups.Refresh();
+            }
+            else
+            {
+                _main.Status = L.T("SavedNotApplied", profile.Name, profile.Version, applied);
+            }
         });
         if (saved && ReferenceEquals(editor, Editor))
         {
@@ -385,6 +456,20 @@ public partial class ProfilesViewModel : ObservableObject
     {
         if (Editor is null) return;
         foreach (var v in Editor.Variables) v.RefreshSecret();
+    }
+
+    /// <summary>Ctrl+C on the grid: puts NAME=value of the selected variable on the clipboard.</summary>
+    [RelayCommand]
+    void CopyVariable()
+    {
+        if (SelectedVariable is not { } v || string.IsNullOrWhiteSpace(v.Name)) return;
+        var name = v.Name.Trim();
+        if (!Secrecy.Copy($"{name}={v.Value}", v.IsSecret))
+        {
+            _main.Status = L.T("ClipboardBusy");
+            return;
+        }
+        _main.Status = v.IsSecret ? L.T("CopiedRowSecret", name, Secrecy.ClipboardSeconds) : L.T("CopiedRow", name);
     }
 
     /// <summary>Masks or unmasks the values of this name everywhere (a setting of the app, not part of the profile).</summary>

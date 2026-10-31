@@ -259,10 +259,28 @@ public partial class EnvironmentViewModel : ObservableObject
     void CopyValue()
     {
         if (Selected is null) return;
-        Secrecy.Copy(Selected.Value, Selected.IsSecret);
+        if (!Secrecy.Copy(Selected.Value, Selected.IsSecret))
+        {
+            _main.Status = L.T("ClipboardBusy");
+            return;
+        }
         _main.Status = Selected.IsSecret
             ? L.T("CopiedSecret", Selected.Name, Secrecy.ClipboardSeconds)
             : L.T("CopiedValue", Selected.Name);
+    }
+
+    /// <summary>Ctrl+C on the grid: puts NAME=value of the selected variable on the clipboard.</summary>
+    [RelayCommand]
+    void CopyRow()
+    {
+        if (Selected is not { } row || string.IsNullOrWhiteSpace(row.Name)) return;
+        var name = row.Name.Trim();
+        if (!Secrecy.Copy($"{name}={row.Value}", row.IsSecret))
+        {
+            _main.Status = L.T("ClipboardBusy");
+            return;
+        }
+        _main.Status = row.IsSecret ? L.T("CopiedRowSecret", name, Secrecy.ClipboardSeconds) : L.T("CopiedRow", name);
     }
 
     [RelayCommand(CanExecute = nameof(HasPending))]

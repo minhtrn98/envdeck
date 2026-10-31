@@ -158,6 +158,28 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>Ctrl+S: saves the profile being edited; in the Environment tab it applies the pending edits (it asks first).</summary>
+    [RelayCommand]
+    void SaveCurrent()
+    {
+        switch (SelectedTab)
+        {
+            case Tabs.Profiles when Profiles.SaveCommand.CanExecute(null):
+                Profiles.SaveCommand.Execute(null);
+                break;
+            case Tabs.Environment when CurrentEnv.ApplyCommand.CanExecute(null):
+                CurrentEnv.ApplyCommand.Execute(null);
+                break;
+        }
+    }
+
+    /// <summary>F5: reloads the live environment (asks before throwing away pending edits).</summary>
+    [RelayCommand]
+    void ReloadCurrent()
+    {
+        if (SelectedTab == Tabs.Environment) CurrentEnv.RefreshCommand.Execute(null);
+    }
+
     [RelayCommand]
     void RestartElevated()
     {

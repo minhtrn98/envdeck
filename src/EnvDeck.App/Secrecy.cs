@@ -22,11 +22,15 @@ static class Secrecy
 
     public const int ClipboardSeconds = 30;
 
-    /// <summary>Copies text; a secret is removed from the clipboard again after a while, if nothing else replaced it.</summary>
-    public static void Copy(string value, bool secret)
+    /// <summary>
+    /// Copies text; a secret is removed from the clipboard again after a while, if nothing else replaced it.
+    /// The clipboard can be held by another program (clipboard managers, remote sessions): it is tried a few times,
+    /// and false means it could not be written.
+    /// </summary>
+    public static bool Copy(string value, bool secret)
     {
-        System.Windows.Clipboard.SetText(value);
-        if (!secret) return;
+        if (!TrySetText(value)) return false;
+        if (!secret) return true;
 
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(ClipboardSeconds) };
         timer.Tick += (_, _) =>
@@ -43,5 +47,23 @@ static class Secrecy
             }
         };
         timer.Start();
+        return true;
+    }
+
+    static bool TrySetText(string value)
+    {
+        for (var attempt = 0; attempt < 2; attempt++) // WPF itself retries for about a second
+        {
+            try
+            {
+                System.Windows.Clipboard.SetText(value);
+                return true;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                System.Threading.Thread.Sleep(60);
+            }
+        }
+        return false;
     }
 }

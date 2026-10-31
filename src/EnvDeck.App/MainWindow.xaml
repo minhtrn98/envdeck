@@ -9,6 +9,8 @@
         WindowStartupLocation="CenterScreen">
     <Window.InputBindings>
         <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding Profiles.NewCommand}" />
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCurrentCommand}" />
+        <KeyBinding Key="F5" Command="{Binding ReloadCurrentCommand}" />
     </Window.InputBindings>
 
     <Window.Resources>
@@ -345,6 +347,9 @@
                         <!-- Header + actions -->
                         <DockPanel Grid.Row="0" Margin="0,0,0,10">
                             <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                                <Button Content="{Binding ApplyEditedText}" Command="{Binding ApplyEditedCommand}" Margin="0,0,6,0" MinWidth="80"
+                                        Visibility="{Binding NeedsApply, Converter={StaticResource BoolToVis}}"
+                                        ToolTip="{l:Tr ApplyVersionTip}" />
                                 <Button Content="{l:Tr Save}" Command="{Binding SaveCommand}" Margin="0,0,6,0" MinWidth="80"
                                         Style="{DynamicResource AccentButtonStyle}"
                                         ToolTip="{l:Tr SaveTip}" />
@@ -362,6 +367,8 @@
                                            Opacity="0.7" />
                                 <TextBlock Text="{l:Tr Unsaved}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#D98A00"
                                            Visibility="{Binding Editor.IsDirty, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding NotAppliedText}" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#D98A00"
+                                           Visibility="{Binding NeedsApply, Converter={StaticResource BoolToVis}}" />
                             </StackPanel>
                         </DockPanel>
 
@@ -384,11 +391,14 @@
 
                         <!-- Rows are reordered by dragging the grip in the first column (or Alt+Up / Alt+Down). -->
                         <DataGrid x:Name="VariablesGrid" Grid.Row="2" ItemsSource="{Binding Editor.VariableView}"
-                                  SelectedItem="{Binding SelectedVariable}" SelectionMode="Single"
+                                  SelectedItem="{Binding SelectedVariable}" SelectionMode="Single" ClipboardCopyMode="None"
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   CanUserReorderColumns="False" HeadersVisibility="Column" Sorting="Grid_Sorting"
                                   AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
                                   PreviewKeyDown="VariablesGrid_PreviewKeyDown" PreviewMouseRightButtonDown="Grid_RightClickSelect">
+                            <DataGrid.InputBindings>
+                                <KeyBinding Key="C" Modifiers="Ctrl" Command="{Binding CopyVariableCommand}" />
+                            </DataGrid.InputBindings>
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="{Binding SelectedVariable.SecretToggleText}" Command="{Binding ToggleSecretCommand}">
@@ -593,12 +603,13 @@
                         <TextBlock Style="{StaticResource Hint}" Text="{l:Tr EnvEditHint}" ToolTip="{l:Tr EnvEditHint}"
                                    VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="12,0,0,0" />
                     </DockPanel>
-                    <DataGrid x:Name="EnvGrid" Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}"
+                    <DataGrid x:Name="EnvGrid" Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}" ClipboardCopyMode="None"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                               SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting"
                               PreviewMouseRightButtonDown="Grid_RightClickSelect">
                         <DataGrid.InputBindings>
                             <KeyBinding Key="Delete" Command="{Binding DeleteVariableCommand}" />
+                            <KeyBinding Key="C" Modifiers="Ctrl" Command="{Binding CopyRowCommand}" />
                         </DataGrid.InputBindings>
                         <DataGrid.ContextMenu>
                             <ContextMenu>
