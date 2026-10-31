@@ -357,6 +357,7 @@ public partial class ProfilesViewModel : ObservableObject
     void AddVariable()
     {
         if (Editor is null) return;
+        Editor.VariableFilter = ""; // a new row would be hidden by a filter it does not match
         var variable = new VariableViewModel(new ProfileVariable { Name = "NEW_VARIABLE", Value = "" });
         Editor.Variables.Add(variable);
         SelectedVariable = variable;
@@ -372,6 +373,7 @@ public partial class ProfilesViewModel : ObservableObject
 
         var window = new EnvPickerWindow(picker!) { Owner = Application.Current.MainWindow };
         if (window.ShowDialog() != true) return;
+        editor.VariableFilter = ""; // the picked variables must be visible
         VariableViewModel? last = null;
         foreach (var v in window.Result) last = editor.Merge(v);
         SelectedVariable = last;
