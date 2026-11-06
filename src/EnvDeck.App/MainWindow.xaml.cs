@@ -96,10 +96,15 @@ public partial class MainWindow : Window
         if (FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject) is { IsSelected: false } row) row.IsSelected = true;
     }
 
-    /// <summary>A new row is inserted on top, which may be scrolled out of view: bring the selection back.</summary>
+    /// <summary>
+    /// A new row is inserted on top, which may be scrolled out of view: bring the selection back. Only the grid's own
+    /// selection counts: the ComboBoxes in the cells raise the same routed event whenever scrolling recycles their
+    /// rows, and reacting to those snapped the grid back to the selected row.
+    /// </summary>
     void Grid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is DataGrid { SelectedItem: { } item } grid) grid.ScrollIntoView(item);
+        if (ReferenceEquals(e.OriginalSource, sender) && sender is DataGrid { SelectedItem: { } item } grid)
+            grid.ScrollIntoView(item);
     }
 
     // ---------------------------------------------------------------- sorting
