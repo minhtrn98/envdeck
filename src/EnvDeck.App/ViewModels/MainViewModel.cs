@@ -91,6 +91,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(Title));
         Status = L.T("Ready");
         Profiles.Reload();
+        Profiles.Editor?.Revalidate();
         CurrentEnv.RefreshTexts();
         Backups.Refresh();
         Compare.RefreshTexts();

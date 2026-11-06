@@ -175,10 +175,11 @@ public partial class EnvironmentViewModel : ObservableObject
         PendingChanged();
     }
 
-    void Track(EnvRowViewModel row)
+    void Track(EnvRowViewModel row, int? index = null)
     {
         row.Changed += OnRowChanged;
-        Rows.Add(row);
+        if (index is { } i) Rows.Insert(i, row);
+        else Rows.Add(row);
     }
 
     // ---------------------------------------------------------------- editing variables
@@ -203,8 +204,8 @@ public partial class EnvironmentViewModel : ObservableObject
 
     sealed class RankComparer(Dictionary<EnvRowViewModel, int> rank) : System.Collections.IComparer
     {
-        // Rows added after grouping have no rank and go last.
-        int Rank(object? o) => o is EnvRowViewModel r && rank.TryGetValue(r, out var i) ? i : int.MaxValue;
+        // Rows added after grouping have no rank and go first, like a new row does in the ungrouped list.
+        int Rank(object? o) => o is EnvRowViewModel r && rank.TryGetValue(r, out var i) ? i : int.MinValue;
 
         public int Compare(object? x, object? y) => Rank(x).CompareTo(Rank(y));
     }
@@ -214,10 +215,14 @@ public partial class EnvironmentViewModel : ObservableObject
     {
         var scope = ScopeFilter == nameof(EnvScope.Machine) ? EnvScope.Machine : EnvScope.User;
         var row = new EnvRowViewModel(scope, null, _ownership);
-        Track(row);
+        Track(row, index: 0); // on top, so a new variable is not hidden below a long list
         Selected = row;
         PendingChanged();
+        RowAdded?.Invoke(row);
     }
+
+    /// <summary>Raised after Add variable, so the view can start editing the name of the new row.</summary>
+    public event Action<EnvRowViewModel>? RowAdded;
 
     bool CanDelete(EnvRowViewModel? row) => (row ?? Selected) is { CanDelete: true };
 

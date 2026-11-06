@@ -23,7 +23,29 @@ public partial class MainWindow : Window
         Activated += (_, _) => _vm.OnActivated();
         // Grouping replaces any header sort, so its arrow must go too.
         _vm.CurrentEnv.GroupingApplied += () => { foreach (var column in EnvGrid.Columns) column.SortDirection = null; };
+        _vm.Profiles.VariableAdded += row => BeginEditName(VariablesGrid, row);
+        _vm.CurrentEnv.RowAdded += row => BeginEditName(EnvGrid, row);
     }
+
+    /// <summary>
+    /// A new row is ready for typing: its Name cell is in edit mode with the placeholder selected. Runs after layout,
+    /// because the row's cell does not exist until the grid has generated it.
+    /// </summary>
+    void BeginEditName(DataGrid grid, object item) =>
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+        {
+            if (grid.Columns.FirstOrDefault(c => c.SortMemberPath == "Name") is not { } column) return;
+            grid.ScrollIntoView(item, column);
+            grid.UpdateLayout();
+            grid.SelectedItem = item;
+            grid.CurrentCell = new DataGridCellInfo(item, column);
+            if (!grid.BeginEdit()) return;
+            if (column.GetCellContent(item) is TextBox box)
+            {
+                box.Focus();
+                box.SelectAll();
+            }
+        }));
 
     protected override void OnClosing(CancelEventArgs e)
     {
@@ -72,6 +94,12 @@ public partial class MainWindow : Window
     void Grid_RightClickSelect(object sender, MouseButtonEventArgs e)
     {
         if (FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject) is { IsSelected: false } row) row.IsSelected = true;
+    }
+
+    /// <summary>A new row is inserted on top, which may be scrolled out of view: bring the selection back.</summary>
+    void Grid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is DataGrid { SelectedItem: { } item } grid) grid.ScrollIntoView(item);
     }
 
     // ---------------------------------------------------------------- sorting
@@ -163,9 +191,32 @@ public partial class MainWindow : Window
         if (from >= 0 && to >= 0) items.Move(from, to);
     }
 
+    /// <summary>
+    /// Tab in the Name editor commits it and edits the Value of the same row with its text selected: a new variable is
+    /// typed as name, Tab, value. (The grid's own Tab only moves the cell and leaves it unedited.) When the Value cell
+    /// cannot be edited (locked row) the default navigation applies.
+    /// </summary>
+    void TabFromName(DataGrid grid, KeyEventArgs e)
+    {
+        if (e.Key != Key.Tab || Keyboard.Modifiers != ModifierKeys.None
+            || FindAncestor<DataGridCell>(e.OriginalSource as DependencyObject) is not { IsEditing: true, Column: { } column } cell
+            || column.SortMemberPath != "Name"
+            || grid.Columns.FirstOrDefault(c => c.SortMemberPath == "Value") is not { } valueColumn
+            || cell.DataContext is not { } item)
+            return;
+
+        e.Handled = true;
+        if (!grid.CommitEdit(DataGridEditingUnit.Cell, exitEditingMode: true)) return;
+        grid.CurrentCell = new DataGridCellInfo(item, valueColumn);
+        grid.BeginEdit();
+    }
+
+    void EnvGrid_PreviewKeyDown(object sender, KeyEventArgs e) => TabFromName(EnvGrid, e);
+
     /// <summary>Keyboard alternative to dragging: Alt+Up / Alt+Down moves the selected variable.</summary>
     void VariablesGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        TabFromName(VariablesGrid, e);
         if (Keyboard.Modifiers != ModifierKeys.Alt || e.SystemKey is not (Key.Up or Key.Down)) return;
         if (RejectIfSorted(VariablesGrid)) { e.Handled = true; return; }
         VariablesGrid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);

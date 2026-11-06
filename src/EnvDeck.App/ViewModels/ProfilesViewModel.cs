@@ -63,7 +63,7 @@ public partial class ProfilesViewModel : ObservableObject
 
     void OnEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(ProfileEditorViewModel.IsDirty)) return;
+        if (e.PropertyName is not (nameof(ProfileEditorViewModel.IsDirty) or nameof(ProfileEditorViewModel.HasKeyErrors))) return;
         SaveCommand.NotifyCanExecuteChanged();
         DiscardCommand.NotifyCanExecuteChanged();
     }
@@ -412,7 +412,10 @@ public partial class ProfilesViewModel : ObservableObject
 
     bool HasUnsavedChanges() => Editor?.IsDirty == true;
 
-    [RelayCommand(CanExecute = nameof(HasUnsavedChanges))]
+    /// <summary>A profile with clashing keys cannot be saved; the rows are already flagged.</summary>
+    bool CanSave() => HasUnsavedChanges() && Editor is { HasKeyErrors: false };
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
     void Save() => SaveEditor(askToReapply: true);
 
     [RelayCommand(CanExecute = nameof(HasUnsavedChanges))]
@@ -430,9 +433,13 @@ public partial class ProfilesViewModel : ObservableObject
         if (Editor is null) return;
         Editor.VariableFilter = ""; // a new row would be hidden by a filter it does not match
         var variable = new VariableViewModel(new ProfileVariable { Name = "NEW_VARIABLE", Value = "" });
-        Editor.Variables.Add(variable);
+        Editor.Variables.Insert(0, variable); // on top: the new row is where the eye already is, not below the fold
         SelectedVariable = variable;
+        VariableAdded?.Invoke(variable);
     }
+
+    /// <summary>Raised after Add variable, so the view can start editing the name of the new row.</summary>
+    public event Action<VariableViewModel>? VariableAdded;
 
     [RelayCommand]
     void AddFromEnvironment()
@@ -610,9 +617,39 @@ public partial class ProfileEditorViewModel : ObservableObject
         Variables.CollectionChanged += (_, e) =>
         {
             foreach (VariableViewModel v in e.NewItems ?? Array.Empty<VariableViewModel>()) v.PropertyChanged += OnVariableChanged;
+            Revalidate();
             MarkChanged();
         };
+        Revalidate();
         IsDirty = false;
+    }
+
+    /// <summary>The first problems between rows (duplicate key...), shown above the grid; empty when all is well.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasKeyErrors))]
+    public partial string KeyErrorSummary { get; set; } = "";
+
+    /// <summary>Saving is refused while this is true (the store would refuse it too).</summary>
+    public bool HasKeyErrors => KeyErrorSummary.Length > 0;
+
+    /// <summary>
+    /// Flags clashing rows as soon as a name, scope or operation changes, with the rules the save uses.
+    /// Also called on a language change, because the messages are built here.
+    /// </summary>
+    public void Revalidate()
+    {
+        var rows = Variables.ToList();
+        var problems = ProfileValidator.FindKeyProblems(rows.Select(v => v.ToModel()).ToList());
+        var errors = new string?[rows.Count];
+        var messages = new List<string>();
+        foreach (var p in problems)
+        {
+            var text = L.T(p.Kind == KeyProblemKind.Duplicate ? "KeyDuplicate" : "KeyCombined", $"{p.Scope}\\{p.Name}");
+            messages.Add(text);
+            foreach (var i in p.Rows) errors[i] = text;
+        }
+        for (var i = 0; i < rows.Count; i++) rows[i].KeyError = errors[i];
+        KeyErrorSummary = string.Join("  ", messages);
     }
 
     public string Name { get; }
@@ -694,9 +731,12 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     void OnVariableChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Showing or hiding a secret is not an edit of the profile.
+        // Showing or hiding a secret, or flagging a clash, is not an edit of the profile.
         if (e.PropertyName is nameof(VariableViewModel.IsRevealed) or nameof(VariableViewModel.IsSecret)
-            or nameof(VariableViewModel.ValueShown) or nameof(VariableViewModel.SecretToggleText)) return;
+            or nameof(VariableViewModel.ValueShown) or nameof(VariableViewModel.SecretToggleText)
+            or nameof(VariableViewModel.KeyError) or nameof(VariableViewModel.HasKeyError)) return;
+        if (e.PropertyName is nameof(VariableViewModel.Name) or nameof(VariableViewModel.Scope) or nameof(VariableViewModel.Op))
+            Revalidate();
         MarkChanged();
     }
 
@@ -733,6 +773,13 @@ public partial class VariableViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string Note { get; set; }
+
+    /// <summary>Why this row clashes with another one (set by the editor while typing); null when it does not.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasKeyError))]
+    public partial string? KeyError { get; set; }
+
+    public bool HasKeyError => KeyError is not null;
 
     /// <summary>The value is masked until the eye button is pressed (per row, forgotten when the profile is reloaded).</summary>
     [ObservableProperty]

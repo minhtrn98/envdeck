@@ -16,6 +16,23 @@
     <Window.Resources>
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
         <SolidColorBrush x:Key="DangerBrush" Color="#E5484D" />
+        <!-- The Name cell of a row that clashes with another one: red text and the reason as a tooltip, while typing. -->
+        <Style x:Key="NameCellText" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasKeyError}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                    <Setter Property="ToolTip" Value="{Binding KeyError}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NameCellEdit" TargetType="TextBox" BasedOn="{StaticResource CellTextEdit}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasKeyError}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                    <Setter Property="ToolTip" Value="{Binding KeyError}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <!-- Windows 11 style on/off switch (the WPF Fluent theme has none built in). -->
         <Style x:Key="ToggleSwitch" TargetType="ToggleButton">
             <Setter Property="Cursor" Value="Hand" />
@@ -384,14 +401,30 @@
                                 <Button Content="{l:Tr GroupRelated}" Command="{Binding GroupRelatedCommand}"
                                         ToolTip="{l:Tr GroupRelatedTip}" />
                             </StackPanel>
-                            <TextBlock Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="12,0,0,0"
-                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                       Text="{l:Tr VariablesHint}" ToolTip="{l:Tr VariablesHint}" />
+                            <Grid Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                           Text="{l:Tr VariablesHint}" ToolTip="{l:Tr VariablesHint}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Editor.HasKeyErrors}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <!-- A clash between rows (same key and operation) is reported here while the name is typed; Save stays off. -->
+                                <TextBlock Foreground="{StaticResource DangerBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                           Text="{Binding Editor.KeyErrorSummary}" ToolTip="{Binding Editor.KeyErrorSummary}"
+                                           Visibility="{Binding Editor.HasKeyErrors, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
                         </DockPanel>
 
                         <!-- Rows are reordered by dragging the grip in the first column (or Alt+Up / Alt+Down). -->
                         <DataGrid x:Name="VariablesGrid" Grid.Row="2" ItemsSource="{Binding Editor.VariableView}"
                                   SelectedItem="{Binding SelectedVariable}" SelectionMode="Single" ClipboardCopyMode="None"
+                                  SelectionChanged="Grid_SelectionChanged"
                                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   CanUserReorderColumns="False" HeadersVisibility="Column" Sorting="Grid_Sorting"
                                   AllowDrop="True" DragOver="ReorderGrid_DragOver" Drop="ReorderGrid_Drop"
@@ -446,7 +479,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                                <DataGridTextColumn ElementStyle="{StaticResource CellText}" EditingElementStyle="{StaticResource CellTextEdit}" Header="{l:Tr ColName}" Width="190"
+                                <DataGridTextColumn ElementStyle="{StaticResource NameCellText}" EditingElementStyle="{StaticResource NameCellEdit}" Header="{l:Tr ColName}" Width="190"
                                                     Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTemplateColumn Header="{l:Tr ColValue}" Width="*" SortMemberPath="Value">
                                     <!-- Secrets are masked; the eye shows one, and editing a cell always shows the real text. -->
@@ -606,7 +639,8 @@
                     <DataGrid x:Name="EnvGrid" Grid.Row="2" ItemsSource="{Binding View}" SelectedItem="{Binding Selected}" ClipboardCopyMode="None"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                               SelectionMode="Single" HeadersVisibility="Column" BeginningEdit="EnvGrid_BeginningEdit" Sorting="Grid_Sorting"
-                              PreviewMouseRightButtonDown="Grid_RightClickSelect">
+                              SelectionChanged="Grid_SelectionChanged"
+                              PreviewKeyDown="EnvGrid_PreviewKeyDown" PreviewMouseRightButtonDown="Grid_RightClickSelect">
                         <DataGrid.InputBindings>
                             <KeyBinding Key="Delete" Command="{Binding DeleteVariableCommand}" />
                             <KeyBinding Key="C" Modifiers="Ctrl" Command="{Binding CopyRowCommand}" />
