@@ -1,5 +1,17 @@
 namespace EnvDeck.Core;
 
+public enum KeyProblemKind
+{
+    /// <summary>The same variable with the same operation on more than one row.</summary>
+    Duplicate,
+
+    /// <summary>Set/Remove next to another row of the same variable.</summary>
+    Combined,
+}
+
+/// <summary>A variable whose rows clash; <paramref name="Rows"/> are the indexes of the rows to flag.</summary>
+public sealed record KeyProblem(KeyProblemKind Kind, EnvScope Scope, string Name, IReadOnlyList<int> Rows);
+
 public static class ProfileValidator
 {
     public static List<string> Validate(Profile profile)
@@ -25,16 +37,39 @@ public static class ProfileValidator
                 errors.Add($"{where} '{v.Name}': {v.Op} needs at least one ';'-separated entry.");
         }
 
-        // Set/Remove replace the whole value, so they cannot be combined with other operations on the same variable.
-        foreach (var group in profile.Variables
-                     .Where(v => !string.IsNullOrWhiteSpace(v.Name))
-                     .GroupBy(v => (v.Scope, Name: v.Name.ToUpperInvariant())))
+        foreach (var p in FindKeyProblems(profile.Variables))
         {
-            var items = group.ToList();
-            if (items.Count > 1 && items.Any(v => v.Op is VarOp.Set or VarOp.Remove))
-                errors.Add($"{group.Key.Scope}\\{items[0].Name}: Set/Remove cannot be combined with other entries for the same variable.");
+            var label = $"{p.Scope}\\{p.Name}";
+            errors.Add(p.Kind == KeyProblemKind.Duplicate
+                ? $"{label} is listed more than once with the same operation. Remove the duplicate row."
+                : $"{label}: Set/Remove cannot be combined with other entries for the same variable.");
         }
         return errors;
+    }
+
+    /// <summary>
+    /// Problems between rows that share a variable. Public so an editor can flag the rows while the name is typed,
+    /// with the same rules the save uses.
+    /// </summary>
+    public static List<KeyProblem> FindKeyProblems(IReadOnlyList<ProfileVariable> variables)
+    {
+        var problems = new List<KeyProblem>();
+        var indexed = variables.Select((v, i) => (v, i)).Where(x => !string.IsNullOrWhiteSpace(x.v.Name));
+        foreach (var group in indexed.GroupBy(x => (x.v.Scope, Name: x.v.Name.ToUpperInvariant())))
+        {
+            var items = group.ToList();
+            if (items.Count < 2) continue;
+            var name = items[0].v.Name;
+            // The same variable listed twice with the same operation is a duplicate key: one row would silently
+            // win (Set) or be merged (Prepend/Append), so the user has to pick which one to keep.
+            var duplicated = items.GroupBy(x => x.v.Op).Where(g => g.Count() > 1).SelectMany(g => g).ToList();
+            if (duplicated.Count > 0)
+                problems.Add(new KeyProblem(KeyProblemKind.Duplicate, group.Key.Scope, name, duplicated.Select(x => x.i).ToList()));
+            // Set/Remove replace the whole value, so they cannot be combined with other operations on the same variable.
+            else if (items.Any(x => x.v.Op is VarOp.Set or VarOp.Remove))
+                problems.Add(new KeyProblem(KeyProblemKind.Combined, group.Key.Scope, name, items.Select(x => x.i).ToList()));
+        }
+        return problems;
     }
 
     public static void ThrowIfInvalid(Profile profile)

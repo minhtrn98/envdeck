@@ -110,6 +110,54 @@ public class StoreTests
         Assert.Equal(2, errors.Count);
     }
 
+    [Theory]
+    [InlineData(VarOp.Set)]
+    [InlineData(VarOp.Prepend)]
+    [InlineData(VarOp.Append)]
+    public void Validator_rejects_duplicate_key_with_same_operation(VarOp op)
+    {
+        var errors = ProfileValidator.Validate(new Profile
+        {
+            Name = "p",
+            Variables = [Var("Foo", "1", op), Var("FOO", "2", op)],
+        });
+
+        Assert.Single(errors);
+        Assert.Contains("more than once", errors[0]);
+    }
+
+    [Fact]
+    public void Validator_allows_prepend_and_append_of_the_same_variable()
+    {
+        var errors = ProfileValidator.Validate(new Profile
+        {
+            Name = "p",
+            Variables = [Var("Path", "a", VarOp.Prepend), Var("PATH", "b", VarOp.Append)],
+        });
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Key_problems_name_the_rows_to_flag()
+    {
+        var problems = ProfileValidator.FindKeyProblems(
+            [Var("A", "1"), Var("B", "1"), Var("a", "2"), Var("P", "x", VarOp.Prepend), Var("P", "y", VarOp.Append), Var("B", "2", VarOp.Append)]);
+
+        Assert.Collection(problems.OrderBy(p => p.Rows[0]),
+            p => { Assert.Equal(KeyProblemKind.Duplicate, p.Kind); Assert.Equal([0, 2], p.Rows); },
+            p => { Assert.Equal(KeyProblemKind.Combined, p.Kind); Assert.Equal([1, 5], p.Rows); });
+    }
+
+    [Fact]
+    public void Saving_a_profile_with_duplicate_keys_is_refused()
+    {
+        using var t = new TestDeck();
+
+        Assert.Throws<DeckException>(() => t.Save("p", Var("A", "1"), Var("A", "2")));
+        Assert.False(t.Service.Profiles.Exists("p"));
+    }
+
     [Fact]
     public void Rename_moves_history_and_on_state()
     {
